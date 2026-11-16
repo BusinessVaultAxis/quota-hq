@@ -28,12 +28,13 @@ async function init() {
     console.log(`Seeded ${n} records`);
   }
   if (ADMIN_EMAIL) {
-    const { rows } = await pool.query(`select id,pw from users where role='admin'`);
+    const { rows } = await pool.query(`select id,pw,invite,invite_exp>now() as live from users where role='admin'`);
+    if (rows[0] && !rows[0].pw && rows[0].invite && rows[0].live) console.log(`ADMIN SETUP LINK: ${BASE_URL}/invite/${rows[0].invite}`);
     if (!rows.length) {
       const t = token();
       await pool.query(`insert into users(email,role,rep_id,invite,invite_exp) values($1,'admin',(select id from docs where col='reps' and (data->>'me')::boolean is true limit 1),$2,now()+interval '7 days') on conflict(email) do update set role='admin',invite=$2,invite_exp=now()+interval '7 days'`, [ADMIN_EMAIL, t]);
       console.log(`ADMIN SETUP LINK: ${BASE_URL}/invite/${t}`);
-    } else if (!rows[0].pw) {
+    } else if (!rows[0].pw && !rows[0].live) {
       const t = token();
       await pool.query(`update users set invite=$1,invite_exp=now()+interval '7 days' where id=$2`, [t, rows[0].id]);
       console.log(`ADMIN SETUP LINK: ${BASE_URL}/invite/${t}`);
@@ -82,6 +83,7 @@ function hydrate(D) {
 async function dataFor(u) {
   const D = {}; for (const c of COLS) D[c] = await all(c);
   const pr = (await pool.query(`select data from prefs where user_id=$1`, [u.id])).rows[0];
+  if (u.role === "admin") { const rg = {}; (await pool.query(`select u.rep_id,p.data from prefs p join users u on u.id=p.user_id where u.rep_id is not null and u.role='rep'`)).rows.forEach(r => { rg[r.rep_id] = r.data }); D._repGoals = rg }
   if (u.role === "admin") return Object.assign(D, { _me: { id: "u" + u.id, email: u.email, role: "admin", prefs: pr ? pr.data : {} } });
   // rep: only what a rep should see
   const me = u.rep_id, sales = hydrate(D), now = new Date(), ms = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -159,7 +161,7 @@ const server = http.createServer(async (req, res) => {
     if (!p.startsWith("/api/")) return send(res, 404, { error: "not found" });
     const u = await currentUser(req); if (!u) return send(res, 401, { error: "Sign in again." });
     if (m === "GET" && p === "/api/data") return send(res, 200, await dataFor(u));
-    if (m === "PUT" && p === "/api/prefs") { const b = await body(req); await pool.query(`insert into prefs(user_id,data) values($1,$2) on conflict(user_id) do update set data=prefs.data||$2`, [u.id, JSON.stringify({ payGoal: num(b.payGoal) })]); return send(res, 200, { ok: true }) }
+    if (m === "PUT" && p === "/api/prefs") { const b = await body(req); await pool.query(`insert into prefs(user_id,data) values($1,$2) on conflict(user_id) do update set data=prefs.data||$2`, [u.id, JSON.stringify(Object.fromEntries([["goalType", ["pay", "sales", "installs"].includes(b.goalType) ? b.goalType : undefined], ...["payGoal", "salesGoal", "installGoal"].map(k => [k, b[k] !== undefined ? num(b[k]) : undefined])].filter(x => x[1] !== undefined)))]); return send(res, 200, { ok: true }) }
 
     if (m === "GET" && p === "/api/recruit-link") {
       if (!u.rep_id) return send(res, 400, { error: "Your login isn't tied to a rep yet." });
