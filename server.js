@@ -6,7 +6,7 @@ const crypto = require("crypto");
 const { Pool } = require("pg");
 
 const PORT = process.env.PORT || 3000;
-const SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString("hex");
+const SECRET = process.env.SESSION_SECRET || crypto.createHash("sha256").update("qhq:" + (process.env.DATABASE_URL || crypto.randomBytes(32).toString("hex"))).digest("hex");
 const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\/$/, "");
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const SECURE = BASE_URL.startsWith("https");
