@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Join Quota</title>
+<link rel="icon" href="/logo.svg">
+<meta name="theme-color" content="#0F1210">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--ink:#0F1210;--lime:#C6F135;--cream:#F4F0E8;--dim:#A8B0A6;--line:#2A302A;--bad:#FF8A7E}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--ink);color:var(--cream);font-family:"DM Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{display:grid;place-items:center;min-height:100vh;padding:24px 16px}
+.card{width:100%;max-width:400px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+.brand img{width:34px;height:28px}
+.brand b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:26px;letter-spacing:-.02em}
+h1{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:34px;letter-spacing:-.02em;margin:0 0 6px;line-height:1.1}
+p.sub{color:var(--dim);margin:0 0 28px;font-size:15px}
+label{display:block;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+input{width:100%;min-height:50px;border-radius:12px;border:1px solid var(--line);background:#171B18;color:#fff;font:inherit;font-size:16px;padding:0 14px;margin-bottom:16px}
+input:focus{outline:3px solid var(--lime);outline-offset:1px;border-color:transparent}
+button{width:100%;min-height:52px;border:0;border-radius:12px;background:var(--lime);color:var(--ink);font:inherit;font-weight:700;font-size:16px;cursor:pointer;margin-top:4px}
+button:disabled{opacity:.6;cursor:default}
+.err{color:var(--bad);font-size:14px;min-height:20px;margin:12px 0 0}
+.foot{color:var(--dim);font-size:13px;margin-top:28px}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand"><img src="/logo.svg" alt=""><b>Quota</b></div>
+  <div id="box"></div>
+</main>
+<script>
+(function(){
+  const box=document.getElementById("box"),code=(location.pathname.match(/^\/join\/([^/]+)/)||[])[1];
+  const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  fetch("/api/join/"+code).then(async r=>{const j=await r.json();
+    if(!r.ok){box.innerHTML=`<h1>Link not valid</h1><p class="sub">${esc(j.error)}</p>`;return}
+    const first=esc((j.recruiter||"").split(" ")[0]);
+    box.innerHTML=`<h1>Join ${first}'s team</h1><p class="sub">${first} invited you to sell with Quota. Fill this out and we'll get you set up.</p>
+    <form id="f"><label for="nm">Full name</label><input id="nm" autocomplete="name" required>
+    <label for="ph">Phone</label><input id="ph" type="tel" autocomplete="tel" required>
+    <label for="em">Email</label><input id="em" type="email" autocomplete="email" required>
+    <label for="mk">City or market (optional)</label><input id="mk" autocomplete="address-level2">
+    <button type="submit">Join the team</button><p class="err" role="alert"></p></form>`;
+    const f=document.getElementById("f");
+    f.addEventListener("submit",async e=>{e.preventDefault();const b=f.querySelector("button"),er=f.querySelector(".err");b.disabled=true;er.textContent="";
+      try{const r=await fetch("/api/join",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,name:f.nm.value,phone:f.ph.value,email:f.em.value,market:f.mk.value})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Something went wrong.");
+        box.innerHTML=`<h1>You're in line</h1><p class="sub">Thanks, ${esc(f.nm.value.split(" ")[0])}. Once you're approved you'll get a link to set your password and see your pay, installs and pipeline.</p>`}
+      catch(x){er.textContent=x.message;b.disabled=false}})});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sign in · Quota</title>
+<link rel="icon" href="/logo.svg">
+<meta name="theme-color" content="#0F1210">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+:root{--ink:#0F1210;--lime:#C6F135;--cream:#F4F0E8;--dim:#A8B0A6;--line:#2A302A;--bad:#FF8A7E}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--ink);color:var(--cream);font-family:"DM Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+body{display:grid;place-items:center;min-height:100vh;padding:24px 16px}
+.card{width:100%;max-width:400px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:36px}
+.brand img{width:34px;height:28px}
+.brand b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:26px;letter-spacing:-.02em}
+h1{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:34px;letter-spacing:-.02em;margin:0 0 6px;line-height:1.1}
+p.sub{color:var(--dim);margin:0 0 28px;font-size:15px}
+label{display:block;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);margin:0 0 6px}
+input{width:100%;min-height:50px;border-radius:12px;border:1px solid var(--line);background:#171B18;color:#fff;font:inherit;font-size:16px;padding:0 14px;margin-bottom:16px}
+input:focus{outline:3px solid var(--lime);outline-offset:1px;border-color:transparent}
+button{width:100%;min-height:52px;border:0;border-radius:12px;background:var(--lime);color:var(--ink);font:inherit;font-weight:700;font-size:16px;cursor:pointer;margin-top:4px}
+button:disabled{opacity:.6;cursor:default}
+.err{color:var(--bad);font-size:14px;min-height:20px;margin:12px 0 0}
+.foot{color:var(--dim);font-size:13px;margin-top:28px}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="brand"><img src="/logo.svg" alt=""><b>Quota</b></div>
+  <div id="box"></div>
+</main>
+<script>
+(function(){
+  const box=document.getElementById("box"),inv=location.pathname.match(/^\/invite\/([^/]+)/);
+  const esc=s=>String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const post=(u,b)=>fetch(u,{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(b)}).then(async r=>{const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||"Something went wrong.");return j});
+  function wire(f,fn){f.addEventListener("submit",async e=>{e.preventDefault();const b=f.querySelector("button"),er=f.querySelector(".err");b.disabled=true;er.textContent="";try{await fn();location.href="/"}catch(x){er.textContent=x.message;b.disabled=false}})}
+  if(inv){
+    fetch("/api/invite/"+inv[1]).then(async r=>{const j=await r.json();
+      if(!r.ok){box.innerHTML=`<h1>Link expired</h1><p class="sub">${esc(j.error)}</p><a href="/login" style="color:var(--lime)">Go to sign in</a>`;return}
+      box.innerHTML=`<h1>${j.name?"Welcome, "+esc(j.name.split(" ")[0]):"Welcome to Quota"}</h1><p class="sub">Set a password for ${esc(j.email)}. You'll use it to sign in from now on.</p>
+      <form id="f"><label for="pw">Password</label><input id="pw" type="password" autocomplete="new-password" minlength="8" required>
+      <label for="pw2">Confirm password</label><input id="pw2" type="password" autocomplete="new-password" minlength="8" required>
+      <button type="submit">Set password and sign in</button><p class="err" role="alert"></p></form>`;
+      const f=document.getElementById("f");wire(f,()=>{const a=f.pw.value;if(a!==f.pw2.value)throw new Error("Passwords don't match.");return post("/api/invite/accept",{token:inv[1],password:a})})});
+  }else{
+    box.innerHTML=`<h1>Sign in</h1><p class="sub">Your pay, installs and pipeline.</p>
+    <form id="f"><label for="em">Email</label><input id="em" type="email" autocomplete="email" required>
+    <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+    <button type="submit">Sign in</button><p class="err" role="alert"></p></form>
+    <p class="foot">Forgot your password? Ask Aidan for a reset link.</p>`;
+    const f=document.getElementById("f");wire(f,()=>post("/api/login",{email:f.em.value,password:f.pw.value}));
+  }
+})();
+</script>
+</body>
+</html>

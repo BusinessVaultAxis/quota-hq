@@ -1,0 +1,1246 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Quota HQ</title><link rel="icon" href="/logo.svg"><meta name="theme-color" content="#0F1210"><script>// Runs the Quota HQ page against the Quota server instead of claude.ai.
+(function(){
+  const subs={},state={data:null};let timer=null;
+  const api=async(method,url,body)=>{const r=await fetch(url,{method,credentials:"same-origin",headers:body!==undefined?{"Content-Type":"application/json"}:{},body:body!==undefined?JSON.stringify(body):undefined});
+    if(r.status===401){location.href="/login";throw new Error("signed out")}const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||"Request failed");e.code=r.status;throw e}return j};
+  const snap=c=>({docs:((state.data&&state.data[c])||[]).map(d=>({id:d.id,data:()=>{const o=Object.assign({},d);delete o.id;return o}}))});
+  const emit=()=>{for(const c in subs)subs[c].forEach(cb=>{try{cb(snap(c))}catch(e){console.error(e)}})};
+  async function load(){try{state.data=await api("GET","/api/data");window.QHQ.me=state.data._me;window.QHQ.pre=!!state.data._pre;if(state.data._me.role==="admin")await Promise.all([window.QHQ.loadApplicants(),window.QHQ.loadUsers()]);emit()}catch(e){console.error(e)}}
+  const after=async r=>{await load();return r};
+  const col=c=>({
+    onSnapshot(cb){(subs[c]=subs[c]||[]).push(cb);if(state.data)setTimeout(()=>cb(snap(c)),0);return()=>{subs[c]=subs[c].filter(x=>x!==cb)}},
+    add:data=>api("POST","/api/doc/"+c,data).then(r=>after({id:r.id})),
+    doc:id=>({
+      set:data=>c==="claims"?Promise.resolve():api("PUT","/api/doc/"+c+"/"+encodeURIComponent(id),data).then(after),
+      update:data=>c==="claims"?Promise.resolve():api("PATCH","/api/doc/"+c+"/"+encodeURIComponent(id),data).then(after),
+      delete:()=>c==="claims"?Promise.resolve():api("DELETE","/api/doc/"+c+"/"+encodeURIComponent(id)).then(after),
+      get:async()=>{const d=((state.data&&state.data[c])||[]).find(x=>x.id===id);return{exists:!!d,data:()=>d}}
+    })});
+  const db={collection:col,doc:p=>{
+    if(/^data\/users\/[^/]+\/prefs$/.test(p))return{get:async()=>{if(!state.data)await load();const pr=(state.data&&state.data._me.prefs)||{};return{exists:true,data:()=>pr}},set:d=>api("PUT","/api/prefs",d).then(after)};
+    const [c,id]=p.split("/");return col(c).doc(id)}};
+  const user={canEdit:async()=>{if(!state.data)await load();return !!(state.data&&state.data._me.role==="admin")},isOwner:async()=>false,can:async()=>null,
+    me:async()=>{if(!state.data)await load();const m=state.data._me;return{id:m.id,email:m.email,name:"",isOwner:false}}};
+  const downloads={save:async({filename,data})=>{const b=data instanceof Blob?data:new Blob([data],{type:filename.endsWith(".csv")?"text/csv":"text/html"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);return{status:"saved"}}};
+  window.QHQ={me:null,pre:false,api,reload:load,users:[],
+    loadUsers:async()=>{try{window.QHQ.users=await api("GET","/api/users")}catch(e){window.QHQ.users=[]}return window.QHQ.users},
+    invite:(repId,email)=>api("POST","/api/users/invite",{repId,email}),
+    revoke:id=>api("DELETE","/api/users/"+id),
+    logout:()=>api("POST","/api/logout",{}).then(()=>{location.href="/login"}),
+    applicants:[],recruitLink:()=>api("GET","/api/recruit-link"),
+    loadApplicants:async()=>{try{window.QHQ.applicants=await api("GET","/api/applicants")}catch(e){window.QHQ.applicants=[]}return window.QHQ.applicants},
+    approve:(id,scale)=>api("POST","/api/applicants/"+id+"/approve",{scale}).then(async r=>{await load();await window.QHQ.loadApplicants();return r}),
+    decline:id=>api("DELETE","/api/applicants/"+id).then(()=>window.QHQ.loadApplicants())};
+  window.claude={use:async n=>n==="db"?db:n==="user"?user:n==="downloads"?downloads:null};
+  load().then(()=>{timer=setInterval(()=>{if(!document.hidden)load()},30000)});
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden)load()});
+})();
+</script></head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: ink command bar + scrollable tabs over a cream work surface; dark "pay panels" carry the money, white cards carry the people. */
+:root{
+  --ink:#0F1210;--ink-2:#232823;--lime:#C6F135;--lime-h:#D6FA62;
+  --bg:#F4F0E8;--card:#FFFFFF;--line:#E1DACB;--line-2:#D8D0BF;--text:#17181C;--muted:#5B5A55;
+  --green:#0B5D45;--tint:#DCEBE3;--panel:#0B0E0C;--dim:#A8B0A6;--warn:#8A5A00;--warn-bg:#FBEFD5;--bad:#B42318;--bad-bg:#FDECEA;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;--body:"DM Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1210;--card:#171B18;--line:#2A302A;--line-2:#353C35;--text:#EEF0EA;--muted:#A3AA9F;--green:#8FD6B4;--tint:#1E3329;--panel:#060807;--warn:#F2C46B;--warn-bg:#3A2E14;--bad:#FF8A7E;--bad-bg:#3A1A17;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1210;--card:#171B18;--line:#2A302A;--line-2:#353C35;--text:#EEF0EA;--muted:#A3AA9F;--green:#8FD6B4;--tint:#1E3329;--panel:#060807;--warn:#F2C46B;--warn-bg:#3A2E14;--bad:#FF8A7E;--bad-bg:#3A1A17;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+h1,h2,h3{font-family:var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--ink);color:#F4F0E8;border-bottom:1px solid var(--ink-2)}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:64px;flex-wrap:wrap;padding-block:8px}
+.top :focus-visible{outline-color:var(--lime)}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{width:30px;height:25px}
+.brand b{font-family:var(--display);font-size:22px;letter-spacing:-.02em}
+.brand span{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);border-left:1px solid #333A33;padding-left:10px}
+.top select{min-height:44px;background:#1A1F1B;border:1px solid #333A33;color:#F4F0E8;border-radius:10px;padding:0 12px}
+.btn{min-height:44px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:10px;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-lime{background:var(--lime);color:var(--ink)}.btn-lime:hover{background:var(--lime-h)}
+.btn-ink{background:var(--text);color:var(--bg)}
+.btn-out{background:var(--card);border:1px solid var(--line-2)}
+.btn-bad{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.btn-sm{min-height:36px;padding:0 12px;font-size:14px}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--ink-2)}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;min-height:46px;padding:0 14px;background:none;border:0;border-bottom:3px solid transparent;color:var(--dim);font-weight:700;cursor:pointer}
+.tabs button[aria-selected="true"]{color:#fff;border-bottom-color:var(--lime)}
+main{padding-block:24px 64px;display:flex;flex-direction:column;gap:20px}
+.sec-h{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sec-h h2{font-size:26px}
+.sub{color:var(--muted);font-size:14px;margin:4px 0 0}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;min-width:0}
+.card h3{font-size:18px;margin-bottom:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.kpi .l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.kpi .v{font-family:var(--display);font-size:32px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:13px;color:var(--muted)}
+.kpi.me{background:var(--ink);border-color:var(--ink);color:#fff}.kpi.me .l,.kpi.me .s{color:var(--dim)}.kpi.me .v{color:var(--lime)}
+.group-l{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.pay{background:var(--panel);color:#fff;border-radius:14px;padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr));gap:16px}
+.pay .l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.pay .v{font-family:var(--display);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.pay .net .v{color:var(--lime);font-size:30px}
+.pay .neg{color:#FF9B8F!important}
+.tbl{overflow-x:auto;margin:0 -4px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td.num,th.num{text-align:right}
+tr.click{cursor:pointer}tr.click:hover td{background:color-mix(in srgb,var(--lime) 10%,transparent)}
+tr:last-child td{border-bottom:0}
+.who{display:flex;align-items:center;gap:10px}
+.av{width:32px;height:32px;flex:none;border-radius:9px;background:var(--ink);color:var(--lime);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700}
+.pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.p-done{background:var(--tint);color:var(--green)}.p-pend{background:var(--warn-bg);color:var(--warn)}.p-cx{background:var(--bad-bg);color:var(--bad)}
+.p-you{background:var(--lime);color:var(--ink)}.p-tag{border:1px solid var(--line-2);color:var(--muted)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);font-weight:500;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink);font-weight:700}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:14px}
+.bar-row .track{grid-column:1/-1;height:10px;border-radius:5px;background:var(--line)}
+.bar-row .fill{height:100%;border-radius:5px;background:var(--green)}
+.bar-row .fill.ph{background:var(--text)}
+.tree{display:flex;flex-direction:column}
+.node{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,auto);align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.node:last-child{border-bottom:0}
+.node .n{display:flex;align-items:center;gap:10px;min-width:0}
+.node .n b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.node .c{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.node .c strong{display:block;color:var(--text);font-size:16px}
+.branch{width:14px;height:14px;border-left:2px solid var(--line-2);border-bottom:2px solid var(--line-2);border-radius:0 0 0 6px;flex:none;margin-top:-10px}
+.inc{display:flex;flex-direction:column;gap:10px}
+.prog{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--lime);border-right:2px solid var(--ink)}
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty b{display:block;font-family:var(--display);font-size:20px;color:var(--text);margin-bottom:6px}
+.empty .btn{margin-top:14px}
+.ro{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:12px 16px;font-size:14px}
+.warn-set{color:var(--warn);font-weight:700}
+.sheet-back{position:fixed;inset:0;z-index:50;background:rgba(15,18,16,.6);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:0 20px calc(20px + env(safe-area-inset-bottom,0px))}
+@media (min-width:720px){.sheet-back{align-items:center;padding:24px}.sheet{border-radius:18px}}
+.sheet-h{position:sticky;top:0;background:var(--card);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 0 12px;border-bottom:1px solid var(--line);margin-bottom:16px;z-index:1}
+.sheet-h h2{font-size:22px}
+.x{width:44px;height:44px;border:0;background:none;border-radius:999px;cursor:pointer;font-size:22px;color:var(--muted)}
+form.f{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:13px;font-weight:700}
+.fld small{font-size:12px;color:var(--muted)}
+.fld input,.fld select,.fld textarea{width:100%;min-height:46px;padding:8px 12px;border:1px solid var(--line-2);border-radius:10px;background:var(--card);font-size:16px}
+.fld input[type=checkbox]{width:22px;min-height:22px;accent-color:var(--green)}
+.fld.chk{flex-direction:row;align-items:center;gap:10px}
+.calc{grid-column:1/-1;background:var(--panel);color:#fff;border-radius:12px;padding:14px 16px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;color:var(--dim)}
+.calc b{display:block;font-family:var(--display);font-size:20px;color:var(--lime)}
+.acts{grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.acts .sp{margin-right:auto}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;z-index:60;font-weight:500;border:1px solid var(--ink-2)}
+@media (max-width:560px){form.f{grid-template-columns:1fr}.brand span{display:none}.kpi .v{font-size:26px}.node{grid-template-columns:minmax(0,1fr) auto auto}.node .c.hide-s{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---- dashboard shell ---- */
+:root{--c-rev:#0B5D45;--c-cost:#B45309;--c-ph:#17181C;--grid:#E9E3D6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--c-rev:#C6F135;--c-cost:#F2A65A;--c-ph:#8FD6B4;--grid:#232823}}
+:root[data-theme="dark"]{--c-rev:#C6F135;--c-cost:#F2A65A;--c-ph:#8FD6B4;--grid:#232823}
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100%}
+.side{background:var(--ink);color:#F4F0E8;position:sticky;top:env(safe-area-inset-top,0px);height:calc(100vh - env(safe-area-inset-top,0px));padding:20px 12px 20px max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:24px;z-index:30}
+.side .brand{padding:0 8px;margin:0}
+.side :focus-visible{outline-color:var(--lime)}
+.side .tabs{flex-direction:column;border:0;gap:2px;overflow:visible}
+.repv #quickSale,.repv #period,.repv .search{display:none!important}
+.mini.m4{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:8px}.mini .d{display:block;font-size:11px;margin-top:2px}
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.stages div{background:var(--bg);border-radius:12px;padding:14px;position:relative;border-left:4px solid var(--line-2)}
+.stages span{display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.stages b{display:block;font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums;margin:4px 0 2px}
+.stages small{color:var(--muted);font-size:13px}
+.stages .warn{border-left-color:#E0A526}.stages .ok{border-left-color:var(--green)}.stages .bad{border-left-color:var(--bad)}
+.me-row td{background:var(--tint)}
+.goal-r{display:flex;gap:16px;align-items:center}.goal-r svg{width:110px;height:110px;flex:none}.goal-r .rg-bg{fill:none;stroke:var(--line);stroke-width:10}.goal-r .rg-fg{fill:none;stroke:var(--green);stroke-width:10;stroke-linecap:round}.goal-r text{font-family:var(--display);font-size:20px;font-weight:700;fill:var(--text)}
+@media (max-width:700px){.stages{grid-template-columns:repeat(2,minmax(0,1fr))}.mini.m4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rankbig{display:flex;gap:14px;align-items:center;margin-bottom:10px}.rankbig b{font-family:var(--display);font-size:44px;line-height:1;color:var(--green)}.rankbig span{font-size:14px;color:var(--muted)}
+.todo{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:10px;background:var(--bg);border-left:4px solid var(--green);margin-bottom:8px}.todo span{font-size:13px;color:var(--muted)}.todo.bad{border-left-color:var(--bad)}
+.side-foot .so{display:block;margin-top:8px;background:none;border:1px solid #333A33;color:var(--dim);border-radius:8px;min-height:32px;padding:0 10px;cursor:pointer;font-size:13px}.side-foot .so:hover{color:#fff}
+.pvbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--lime);color:var(--ink);border-radius:12px;padding:10px 14px}.pvbar span{font-size:14px;margin-right:auto}.pvbar select{min-height:36px;border-radius:8px;border:1px solid var(--ink);background:#fff;padding:0 8px}.pvbar .btn-lime{background:var(--ink);color:var(--lime)}
+.nav-g{margin:14px 12px 4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6E766C}.nav-g:first-child{margin-top:0}
+.side .tabs button{display:flex;align-items:center;gap:12px;width:100%;min-height:42px;padding:0 12px;border:0;border-radius:10px;text-align:left;color:var(--dim);font-weight:500}
+.side .tabs button svg{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.side .tabs button:hover{color:#fff;background:#161A17}
+.side .tabs button[aria-selected="true"]{background:#1C221D;color:#fff;font-weight:700}
+.side .tabs button[aria-selected="true"] svg{color:var(--lime)}
+.side-foot{margin-top:auto;padding:12px;border-radius:12px;background:#161A17;font-size:13px;color:var(--dim)}
+.side-foot b{display:block;color:#fff;font-size:14px}
+.mainc{min-width:0;display:flex;flex-direction:column}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-block:18px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));border-bottom:1px solid var(--line);background:var(--card)}
+.bar h1{font-size:26px}
+.eyebrow{margin:0;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.bar select{min-height:44px;background:var(--card);border:1px solid var(--line-2);border-radius:10px;padding:0 12px;font-weight:500}
+#view{padding-block:20px 64px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px;max-width:1480px;width:100%}
+.dg{display:grid;gap:16px;grid-template-columns:repeat(12,minmax(0,1fr))}
+.s12{grid-column:span 12}.s8{grid-column:span 8}.s7{grid-column:span 7}.s6{grid-column:span 6}.s5{grid-column:span 5}.s4{grid-column:span 4}
+@media (max-width:1100px){.s8,.s7,.s5,.s4{grid-column:span 12}.s6{grid-column:span 12}}
+.kt-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+@media (max-width:1250px){.kt-row{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kt-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kt{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px 10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.kt .l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kt .v{font-family:var(--display);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.kt .d{font-size:12px;font-weight:700;color:var(--muted)}
+.kt .d.up{color:var(--green)}.kt .d.dn{color:var(--bad)}
+.kt svg{width:100%;height:30px;margin-top:4px}
+.kt.hero{background:var(--ink);border-color:var(--ink);color:#fff}.kt.hero .l{color:var(--dim)}.kt.hero .v{color:var(--lime)}.kt.hero .d{color:var(--dim)}.kt.hero .d.up{color:var(--lime)}.kt.hero .d.dn{color:#FF9B8F}
+.kt.hero .sp-line{stroke:var(--lime)}.kt.hero .sp-area{fill:var(--lime)}
+.sp-line{fill:none;stroke:var(--c-rev);stroke-width:2;vector-effect:non-scaling-stroke}
+.sp-area{fill:var(--c-rev);opacity:.12}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.ph{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ph h3{font-size:16px;margin:0}
+.ph .lg{display:flex;gap:14px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.ph .lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.ax{font-size:11px;fill:var(--muted);font-family:var(--body);font-variant-numeric:tabular-nums}
+.gl{stroke:var(--grid);stroke-width:1}
+.big{font-family:var(--display);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums}
+.pl{display:flex;flex-direction:column;gap:8px}
+.pl-r{display:grid;grid-template-columns:120px minmax(0,1fr) 90px;align-items:center;gap:10px;font-size:13px;font-variant-numeric:tabular-nums}
+.pl-r .t{height:8px;border-radius:4px;background:var(--line)}
+.pl-r .t i{display:block;height:100%;border-radius:4px;background:var(--c-cost)}
+.pl-r.rev .t i{background:var(--c-rev)}
+.pl-r.net{border-top:1px solid var(--line);padding-top:10px;font-weight:700}
+.pl-r.net .t i{background:var(--text)}
+.pl-r span:last-child{text-align:right}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mini div{background:var(--bg);border-radius:10px;padding:10px 12px}
+.mini b{display:block;font-family:var(--display);font-size:22px;font-variant-numeric:tabular-nums}
+.mini span{font-size:12px;color:var(--muted)}
+.rate{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.rate .t{width:48px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.rate .t i{display:block;height:100%;background:var(--c-rev)}
+.panel table td,.panel table th{padding:8px 6px}
+.age-late{color:var(--bad);font-weight:700}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{height:auto;flex-direction:row;align-items:center;gap:12px;padding:8px max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+  .side .brand span,.side-foot{display:none}
+  .side .tabs{flex-direction:row;overflow-x:auto;flex:1;min-width:0}
+  .side .tabs button{width:auto;flex:none;padding:0 12px}
+  .bar{padding-block:14px}.bar h1{font-size:22px}
+  #view{padding-block:16px 48px}
+}
+@media (max-width:560px){.side .tabs button span{display:none}.side .tabs button{padding:0 11px}.pl-r{grid-template-columns:96px minmax(0,1fr) 76px}.bar,#view{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+/* ---- CRM layer ---- */
+body{font-size:14px}
+.bar{padding-block:12px;gap:16px}
+.bar h1{font-size:20px}
+.search{position:relative;flex:1 1 240px;max-width:440px}
+.search>svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;pointer-events:none}
+.search input{width:100%;min-height:40px;padding:0 12px 0 34px;border:1px solid var(--line-2);border-radius:8px;background:var(--bg);font-size:14px}
+.sres{position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:280px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.18);max-height:60vh;overflow:auto;z-index:45;padding:6px}
+.sres .grp{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px}
+.sres button{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:6px 10px;border:0;border-radius:6px;background:none;text-align:left;cursor:pointer;font-size:14px}
+.sres button:hover,.sres button:focus-visible{background:var(--bg)}
+.sres small{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:55%}
+.sres .av{width:26px;height:26px;font-size:13px;border-radius:7px}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.toolbar input,.toolbar select{min-height:36px;padding:0 10px;border:1px solid var(--line-2);border-radius:8px;background:var(--card);font-size:13px}
+.toolbar input[type=search]{flex:0 1 240px;min-width:0}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden;background:var(--card)}
+.seg button{min-height:34px;padding:0 14px;border:0;background:none;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--lime);font-weight:700}
+.grid-t{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:calc(100vh - 210px);min-height:120px}
+.grid-t table{font-size:13px}
+.grid-t thead th{position:sticky;top:0;z-index:2;background:var(--card);padding:10px;cursor:pointer;user-select:none;box-shadow:inset 0 -1px 0 var(--line);border:0}
+.grid-t thead th:hover,th[aria-sort]{color:var(--text)}
+th[aria-sort="ascending"]::after{content:" ▴"}th[aria-sort="descending"]::after{content:" ▾"}
+.grid-t td{padding:9px 10px}
+.grid-t tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--bg) 45%,var(--card))}
+.grid-t tbody tr.click:hover td{background:color-mix(in srgb,var(--lime) 14%,var(--card))}
+.grid-t tfoot td{position:sticky;bottom:0;background:var(--bg);font-weight:700;border-top:1px solid var(--line);border-bottom:0}
+.grid-t input[type=checkbox]{width:16px;height:16px;margin:0;accent-color:var(--green);cursor:pointer}
+.bulk{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--ink);color:#fff;border-radius:8px;font-size:13px}
+.bulk b{margin-right:6px}
+.board{display:grid;grid-template-columns:repeat(3,minmax(260px,1fr));gap:12px;overflow-x:auto;align-items:start;padding-bottom:4px}
+.col{background:color-mix(in srgb,var(--line) 50%,var(--bg));border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:240px}
+.col.over{outline:2px dashed var(--green);outline-offset:-2px}
+.col-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;font-size:13px;padding:2px 4px 4px}
+.col-h small{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.dc{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px;cursor:pointer}
+.dc[draggable="true"]{cursor:grab}
+.dc:hover{border-color:var(--line-2);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.dc b{font-size:14px}
+.dc .r{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.dc.drag{opacity:.45}
+.sheet-back{align-items:stretch!important;justify-content:flex-end!important;padding:0!important}
+.sheet{max-width:540px!important;height:100%;max-height:none!important;border-radius:0!important;padding-top:env(safe-area-inset-top,0px)!important;box-shadow:-12px 0 40px rgba(0,0,0,.2)}
+.sheet .tbl table{font-size:13px}
+.av-lg{width:44px;height:44px;font-size:20px;border-radius:12px}
+.dh{display:flex;align-items:baseline;gap:8px;font-size:14px;margin:18px 0 6px}
+.dh .sub{margin:0;font-weight:500}
+@media (max-width:900px){.nav-g{display:none}.app{grid-template-columns:minmax(0,1fr)}.side,.mainc{min-width:0}.search{flex:1 1 100%;min-width:0;max-width:none;order:3}.sres{min-width:0}.bar select{max-width:46vw}}
+.sc{gap:14px}
+.sc3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sc3 div{background:var(--bg);border-radius:10px;padding:10px 12px}
+.sc3 b{display:block;font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums;line-height:1.1}
+.sc3 span{font-size:12px;color:var(--muted)}
+.scp{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+.scp div{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-size:13px;color:var(--muted)}
+.scp b{font-family:var(--display);font-size:20px;color:var(--text);font-variant-numeric:tabular-nums}
+.scp b.pp{font-size:16px;color:var(--muted)}
+.sc-hero{background:var(--ink);border-color:var(--ink);color:#fff}
+.sc-hero h3{color:#fff}
+.sc-hero .sub,.sc-hero .sc3 span,.sc-hero .scp div{color:var(--dim)}
+.sc-hero .sc3 div{background:#1C221D}
+.sc-hero .scp{border-color:#2A302A}
+.sc-hero .scp b{color:var(--lime)}.sc-hero .scp b.pp{color:var(--dim)}
+</style>
+
+<div class="app">
+<aside class="side">
+    <div class="brand">
+      <svg viewBox="0 0 360 300" aria-hidden="true"><path fill="#C6F135" d="M76 0 H284 A76 76 0 0 1 360 76 V266 L288 194 V90 A18 18 0 0 0 270 72 H90 A18 18 0 0 0 72 90 V210 A18 18 0 0 0 90 228 H158 L230 300 H76 A76 76 0 0 1 0 224 V76 A76 76 0 0 1 76 0 Z"/><path fill="#C6F135" d="M129 165 H225 L360 300 H264 Z"/></svg>
+      <b>Quota</b><span>HQ</span>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs" aria-label="Sections"></nav>
+    <div class="side-foot" id="sideFoot"></div>
+</aside>
+<div class="mainc">
+  <header class="bar">
+    <div style="min-width:0"><p class="eyebrow">Quota HQ</p><h1 id="vt">Dashboard</h1></div>
+    <div class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="gsearch" type="search" placeholder="Search reps, customers, deals…" aria-label="Search everything" autocomplete="off"><div class="sres" id="gres" hidden></div></div>
+    <span style="margin-left:auto"></span>
+    <label for="period" style="position:absolute;left:-9999px">Period</label>
+    <select id="period">
+      <option value="week">This week</option>
+      <option value="month" selected>This month</option>
+      <option value="last">Last month</option>
+      <option value="ytd">This year</option>
+      <option value="all">All time</option>
+    </select>
+    <button class="btn btn-lime" id="quickSale" type="button">+ Log sale</button>
+  </header>
+  <main id="view" aria-live="polite">
+    <div class="empty"><b>Loading Quota HQ</b>Pulling sales, team and pay plans.</div>
+  </main>
+</div>
+</div>
+<div id="sheetRoot"></div>
+
+<script>
+(function(){
+const ALLTABS=[["dash","Dashboard"],["mine","My view"],["goals","Goals"],["sales","Sales"],["team","Reps"],["payout","Payouts"],["comm","Commissions"],["exp","Expenses"],["inc","Incentives"],["pay","Pay plans"]];let TABS=ALLTABS;
+const NAVG={dash:"Overview",sales:"Team",payout:"Money",pay:"Setup"};
+let previewRep=null;const RV=()=>repMode||previewRep;
+const repTabs=id=>{const t=[["r_home","Home"],["r_pay","Pay"],["r_pipe","Pipeline"],["r_board","Leaderboard"],["r_goals","Goals"]];if(downline(id).some(x=>x!==id))t.push(["r_team","My team"]);return t};
+let MYGOAL=0,MINE_CTX=null,myName="",repMode=null,myUid=null,myEmail=null,CLAIMS=[],linkPick="";
+const COLS=["reps","rates","sales","expenses","incentives","goals"];
+const D={reps:[],rates:[],sales:[],expenses:[],incentives:[],goals:[]};
+let db=null,canEdit=true,tab="dash",loaded=0,salesFilter="all",salesStatus="all";
+try{const h=location.hash.slice(1);if(TABS.some(t=>t[0]===h))tab=h;}catch(e){}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const num=v=>{const n=parseFloat(v);return isFinite(n)?n:0};
+const money=n=>(n<0?"-":"")+"$"+Math.abs(Math.round(n)).toLocaleString();
+const pad=n=>String(n).padStart(2,"0");
+const ymd=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const today=()=>ymd(new Date());
+const fmtD=s=>{if(!s)return"—";const [y,m,d]=s.split("-");return new Date(+y,+m-1,+d).toLocaleDateString(undefined,{month:"short",day:"numeric"})};
+const FIBER_PROV=["Kinetic","AT&T Fiber","Verizon Fios"],PHONE_PROV=["AT&T","Verizon"];
+const FIBER_PROD=["500 Mbps","1 Gig","2 Gig","5 Gig"],PHONE_PROD=["New line","Upgrade","BYOD"];
+const EXP_CAT=["Travel","Flights & tickets","Rentals","Housing","Food & per diem","Other"];
+const ROLES=["Owner","Manager","Team lead","Rep"];
+
+function range(){
+  const p=$("#period").value,t=new Date(),y=t.getFullYear(),m=t.getMonth();
+  if(p==="week"){const d=new Date(t);const dow=(d.getDay()+6)%7;d.setDate(d.getDate()-dow);const e=new Date(d);e.setDate(d.getDate()+6);return{s:ymd(d),e:ymd(e)}}
+  if(p==="month")return{s:ymd(new Date(y,m,1)),e:ymd(new Date(y,m+1,0))};
+  if(p==="last")return{s:ymd(new Date(y,m-1,1)),e:ymd(new Date(y,m,0))};
+  if(p==="ytd")return{s:y+"-01-01",e:y+"-12-31"};
+  return{s:"0000-01-01",e:"9999-12-31"};
+}
+const inR=(d,R)=>!!d&&d>=R.s&&d<=R.e;
+const rep=id=>D.reps.find(r=>r.id===id);
+const repName=id=>{const r=rep(id);return r?r.name:"Unassigned"};
+const me=()=>D.reps.find(r=>r.me);
+const initials=n=>(n||"?").trim().charAt(0).toUpperCase();
+const qty=s=>Math.max(1,num(s.qty)||1);
+const doneDate=s=>s.installDate||s.date;
+
+function downline(id,seen){seen=seen||new Set();if(seen.has(id))return[];seen.add(id);let out=[id];D.reps.filter(r=>r.managerId===id).forEach(r=>{out=out.concat(downline(r.id,seen))});return out}
+
+function repStats(R){
+  const m={};D.reps.forEach(r=>m[r.id]={sold:0,cx:0,inst:0,fiber:0,lines:0,pend:0,earned:0,ovr:0,rev:0});
+  D.sales.forEach(s=>{
+    const st=m[s.repId];if(!st)return;const q=qty(s);
+    if(inR(s.date,R)&&!s.preQuota){if(s.status==="cancelled")st.cx+=1;else st.sold+=1;if(s.status==="pending")st.pend+=1}
+    if(s.status==="done"&&inR(doneDate(s),R)){
+      st.inst+=1;if(s.type==="phone")st.lines+=q;else st.fiber+=1;
+      st.earned+=num(s.repPay)*q;st.rev+=num(s.revenue)*q;
+      for(const a in (s.ovr||{}))if(m[a])m[a].ovr+=s.ovr[a]*q;
+    }
+  });return m;
+}
+function roll(ids,m){const t={sold:0,cx:0,inst:0,fiber:0,lines:0,pend:0,earned:0,ovr:0,rev:0};ids.forEach(i=>{const s=m[i];if(s)for(const k in t)t[k]+=s[k]});return t}
+
+function incProgress(inc){
+  const per={};D.reps.forEach(r=>per[r.id]=0);
+  D.sales.forEach(s=>{if(per[s.repId]===undefined)return;
+    const d=inc.metric==="sales"?s.date:doneDate(s);if(!(d>=inc.start&&d<=inc.end))return;
+    if(inc.metric==="sales"){if(s.status!=="cancelled")per[s.repId]+=1}
+    else if(s.status==="done"){if(inc.metric==="lines"){if(s.type==="phone")per[s.repId]+=qty(s)}else if(s.type!=="phone")per[s.repId]+=1}
+  });
+  let ids=D.reps.map(r=>r.id);if(inc.repId)ids=downline(inc.repId);
+  const target=num(inc.target),reward=num(inc.reward);
+  if(inc.scope==="team"){const tot=ids.reduce((a,i)=>a+(per[i]||0),0);return{tot,target,hit:tot>=target&&target>0?1:0,cost:tot>=target&&target>0?reward:0,per,ids}}
+  const q=ids.filter(i=>target>0&&per[i]>=target);return{tot:null,target,hit:q.length,cost:q.length*reward,per,ids,q};
+}
+
+function totals(R){
+  const m=repStats(R),all=roll(D.reps.map(r=>r.id),m);
+  const exp=D.expenses.filter(e=>inR(e.date,R)).reduce((a,e)=>a+num(e.amount),0);
+  const inc=D.incentives.filter(i=>inR(i.end,R)).reduce((a,i)=>a+incProgress(i).cost,0);
+  const nm=D.reps.filter(r=>!r.me),rp=nm.reduce((a,r)=>a+m[r.id].earned,0),ro=nm.reduce((a,r)=>a+m[r.id].ovr,0);
+  return{m,all,exp,inc,repPay:rp,ovr:ro,net:all.rev-rp-ro-exp-inc};
+}
+
+/* ---------- views ---------- */
+const ICO={r_home:"M3 11l9-7 9 7v9H3zM9 20v-6h6v6",r_pay:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",r_pipe:"M3 5h18l-7 8v6l-4 2v-8z",r_board:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z",r_goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",r_team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",dash:"M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",sales:"M4 4v16h16M8 15l4-4 3 3 5-6",team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",mine:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6",goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",payout:"M4 5h16v15H4zM4 10h16M8 3v4M16 3v4",comm:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",pay:"M12 3v18M17 7H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H6",exp:"M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",inc:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"};
+function renderTabs(){$("#tabs").innerHTML=TABS.map(([k,l])=>(!RV()&&NAVG[k]?`<p class="nav-g" role="presentation">${NAVG[k]}</p>`:"")+`<button role="tab" type="button" data-tab="${k}" aria-selected="${k===tab}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICO[k]}"/></svg><span>${l}</span></button>`).join("")}
+function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").contains(ae)?ae.id:null;let pos=null;try{pos=ae.selectionStart}catch(e){}
+  if(!canEdit){const r=D.reps.find(x=>(myUid&&x.userId===myUid)||(myEmail&&x.email&&x.email.trim().toLowerCase()===myEmail));repMode=r?r.id:null;ST.m.id=repMode;
+    document.body.classList.add("repv");if(repMode){TABS=repTabs(repMode);if(!TABS.some(x=>x[0]===tab))tab="r_home"}if(!repMode){renderTabs();$("#vt").textContent="Link your login";$("#sideFoot").innerHTML="";$("#view").innerHTML=linkHtml();return}}
+  if(canEdit){if(previewRep&&rep(previewRep)){TABS=repTabs(previewRep);if(!TABS.some(x=>x[0]===tab))tab="r_home";ST.m.id=previewRep;document.body.classList.add("repv")}else{previewRep=null;TABS=ALLTABS;if(tab.startsWith("r_"))tab="mine";document.body.classList.remove("repv")}}
+  {const bs=$(".side .brand span"),eb=$(".eyebrow");if(bs)bs.textContent=RV()?"Rep":"HQ";if(eb)eb.textContent=RV()?"Quota Rep":"Quota HQ"}
+  renderTabs();const R=range();$("#vt").textContent=(TABS.find(t=>t[0]===tab)||[])[1]||"";
+  const m=RV()?rep(RV()):me();$("#sideFoot").innerHTML=m?`<b>${esc(m.name)}</b>${esc(m.role||"")}${RV()?"":" · "+D.reps.length+" on team"}`:`<b>Set up</b>Add yourself under Reps`;
+  ({r_home:vMine,r_pay:vMine,r_pipe:vMine,r_board:vMine,r_goals:vMine,r_team:vMine,dash:vDash,sales:vSales,team:vTeam,comm:vComm,payout:vPayouts,goals:vGoals,mine:vMine,pay:vPay,exp:vExp,inc:vInc})[tab](R);
+  if(aid){const el=document.getElementById(aid);if(el){el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos)}catch(e){}}}
+  if(tab==="team"&&canEdit&&CLAIMS.length)$("#view").insertAdjacentHTML("afterbegin",claimsHtml());
+  if(tab==="team"&&canEdit&&window.QHQ)$("#view").insertAdjacentHTML("afterbegin",loginsHtml());
+  if(canEdit&&!RV()&&window.QHQ&&(window.QHQ.applicants||[]).length&&(tab==="team"||tab==="dash"))$("#view").insertAdjacentHTML("afterbegin",tab==="team"?recruitsHtml():`<div class="pvbar" style="margin-bottom:0"><b>${window.QHQ.applicants.length} new recruit${window.QHQ.applicants.length>1?"s":""} waiting</b><span>Set their pay scale and approve</span><button class="btn btn-lime btn-sm" type="button" data-tab="team">Review</button></div>`);
+  if(tab==="team"&&canEdit&&window.QHQ&&Object.keys(ALINKS).length)$("#view").insertAdjacentHTML("afterbegin",alinksHtml());
+  if(window.QHQ&&!previewRep&&(repMode||(tab==="mine"&&canEdit))&&!$("#view [data-recruit]")){const tb=$("#view .toolbar");if(tb)tb.insertAdjacentHTML("beforeend",`<button class="btn btn-lime btn-sm" type="button" data-recruit="1" style="margin-left:auto">+ Recruit a rep</button>`)}
+  if(RLINK&&window.QHQ&&(repMode||tab==="mine")){const tb=$("#view .toolbar");if(tb)tb.insertAdjacentHTML("afterend",`<div class="todo" style="margin-bottom:16px"><b>Your recruit link</b><span>Text this to anyone you want on your team. They fill out a quick form, Aidan approves, and they land under you.</span><span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><input readonly value="${esc(RLINK)}" style="flex:1;min-width:200px" aria-label="Recruit link"><button class="btn btn-lime btn-sm" type="button" data-copy="${esc(RLINK)}">Copy</button>${navigator.share?`<button class="btn btn-out btn-sm" type="button" data-share="${esc(RLINK)}">Share</button>`:""}</span></div>`)}
+  if(window.QHQ&&!$("#sideFoot [data-logout]"))$("#sideFoot").insertAdjacentHTML("beforeend",`<button type="button" class="so" data-logout="1">Sign out</button>`);
+  if(repOpen&&$("#repDrawer"))openRep(repOpen)}
+function linkHtml(){const mine=CLAIMS.find(c=>c.id===myUid);
+  if(!myUid)return`<div class="panel empty"><b>Sign in to see your pay</b>Open this page while signed in to Claude.</div>`;
+  return`<div class="panel" style="max-width:520px"><h3>Which rep are you?</h3><p class="sub">Pick your name. Aidan approves it once, then this page opens straight to your installs and pay.</p>
+   ${mine?`<p><span class="pill p-pend">Waiting for approval</span> as <b>${esc(repName(mine.repId))}</b></p>`:""}
+   <div class="toolbar"><select id="lpick" data-f="lp" aria-label="Your name"><option value="">Choose your name</option>${D.reps.filter(r=>!r.me).sort((a,b)=>a.name.localeCompare(b.name)).map(r=>`<option value="${r.id}" ${linkPick===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}</select><button class="btn btn-lime btn-sm" type="button" data-claim="1">${mine?"Update request":"Request access"}</button></div></div>`}
+let LINKS={},LOGOPEN=false,RLINK=null,ALINKS={};
+function recruitsHtml(){const A=window.QHQ.applicants||[];return`<div class="panel" style="border:2px solid var(--lime)"><div class="ph"><h3>New recruits</h3><span class="sub" style="margin:0">${A.length} waiting for approval</span></div><div class="tbl"><table><thead><tr><th>Name</th><th>Recruited by</th><th>Contact</th><th>Applied</th><th class="num">Pay scale</th><th></th></tr></thead><tbody>
+  ${A.map(a=>{const rs=num((rep(a.recruiter)||{}).scale);return`<tr><td><b>${esc(a.name)}</b>${a.market?`<br><span class="sub" style="margin:0">${esc(a.market)}</span>`:""}</td><td>${esc(a.recruiter_name||"—")}${rs?`<br><span class="sub" style="margin:0">at ${money(rs)}</span>`:""}</td><td>${esc(a.phone)}<br><span class="sub" style="margin:0">${esc(a.email)}</span></td><td>${fmtD(String(a.created).slice(0,10))}</td>
+  <td class="num"><input type="number" min="0" step="25" id="asc-${a.id}" aria-label="Pay scale for ${esc(a.name)}" placeholder="$ per 1 Gig" style="max-width:120px" value="${rs?Math.max(0,rs-25):""}"></td><td class="num"><button class="btn btn-lime btn-sm" type="button" data-appr="${a.id}">Approve</button> <button class="btn btn-sm" type="button" style="background:none;color:var(--bad)" data-decl="${a.id}">Decline</button></td></tr>`}).join("")}</tbody></table></div>
+  <p class="sub" style="margin:10px 0 0">Approving adds them under their recruiter at that scale (the recruiter earns the difference) and gives you their set-password link.</p></div>`}
+function alinksHtml(){return Object.entries(ALINKS).map(([n,l])=>`<div class="todo"><b>Send this to ${esc(n)}. It works once and expires in 7 days.</b><span style="display:flex;gap:8px;flex-wrap:wrap"><input readonly value="${esc(l)}" style="flex:1;min-width:220px" aria-label="Invite link"><button class="btn btn-lime btn-sm" type="button" data-copy="${esc(l)}">Copy</button></span></div>`).join("")}
+function loginsHtml(){const U=window.QHQ.users||[],byRep={};U.forEach(u=>{if(u.rep_id)byRep[u.rep_id]=u});
+  const rows=D.reps.slice().sort((a,b)=>(b.me?1:0)-(a.me?1:0)||String(a.name).localeCompare(String(b.name))).map(r=>{const u=byRep[r.id],st=!u?"No login":u.active?(u.last_login?"Active · last in "+fmtD(String(u.last_login).slice(0,10)):"Active"):"Invite sent";
+    return`<tr><td><div class="who"><span class="av">${esc(initials(r.name))}</span><span>${esc(r.name)}${r.me?' <span class="pill p-you">You</span>':""}</span></div></td><td>${r.me?'<span class="sub" style="margin:0">Your admin login</span>':esc(r.email||"")||'<span class="sub" style="margin:0">Add email under Edit rep</span>'}</td><td><span class="pill ${u&&u.active?"p-done":u?"p-pend":""}">${st}</span></td>
+    <td class="num">${r.me?"":`<button class="btn btn-out btn-sm" type="button" data-invite="${r.id}" ${r.email?"":"disabled"}>${u&&u.active?"Reset password":u?"New link":"Create login"}</button>${u&&!r.me?` <button class="btn btn-sm" type="button" style="background:none;color:var(--bad)" data-revoke="${u.id}">Remove</button>`:""}`}</td></tr>
+    ${LINKS[r.id]?`<tr><td colspan="4"><div class="todo"><b>Send this to ${esc((r.name||"").split(" ")[0])}. It works once and expires in 7 days.</b><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input readonly value="${esc(LINKS[r.id])}" style="flex:1;min-width:220px" aria-label="Invite link"><button class="btn btn-lime btn-sm" type="button" data-copy="${esc(LINKS[r.id])}">Copy</button></span></div></td></tr>`:""}`}).join("");
+  const n=U.filter(u=>u.active).length;
+  return`<div class="panel"><div class="ph"><h3>Rep logins</h3><button class="btn btn-out btn-sm" type="button" data-logtoggle="1">${LOGOPEN?"Hide":"Manage"} · ${n} active</button></div>${LOGOPEN?`<p class="sub" style="margin:0 0 10px">Create a login, copy the link, and text it to the rep. They set their own password and land on their rep portal.</p><div class="tbl"><table><thead><tr><th>Rep</th><th>Email</th><th>Login</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:""}</div>`}
+function claimsHtml(){return`<div class="panel" style="border:2px solid var(--lime)"><div class="ph"><h3>Login requests</h3><span class="sub" style="margin:0">${CLAIMS.length} waiting</span></div>
+  ${CLAIMS.map(c=>`<div class="toolbar" style="margin-bottom:8px"><span><b>${esc(c.who||"Someone")}</b> says they are <b>${esc(repName(c.repId))}</b>${c.email?` · ${esc(c.email)}`:""}</span><span style="margin-left:auto"></span><button class="btn btn-lime btn-sm" type="button" data-approve="${esc(c.id)}">Approve</button><button class="btn btn-out btn-sm" type="button" data-deny="${esc(c.id)}">Dismiss</button></div>`).join("")}</div>`}
+const roBanner=()=>canEdit?"":`<div class="ro">You have view access. Ask the owner for edit access to log sales.</div>`;
+const statusPill=s=>s.status==="done"?`<span class="pill p-done">${s.type==="phone"?"Activated":"Installed"}</span>`:s.status==="cancelled"?`<span class="pill p-cx">Cancelled</span>`:`<span class="pill p-pend">Pending</span>`;
+const kpi=(l,v,s,cls)=>`<div class="kpi ${cls||""}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||"&nbsp;"}</div></div>`;
+const pct=(a,b)=>b?Math.round(a/b*100)+"%":"—";
+
+/* ---------- dashboard v2 ---------- */
+const pd=s=>{const [y,m,d]=s.split("-");return new Date(+y,+m-1,+d)};
+function prevRange(R){if(R.s==="0000-01-01")return null;const s=pd(R.s),e=pd(R.e<today()?R.e:today());const days=Math.round((e-s)/864e5)+1;const pe=new Date(s);pe.setDate(pe.getDate()-1);const ps=new Date(pe);ps.setDate(ps.getDate()-days+1);return{s:ymd(ps),e:ymd(pe)}}
+function curRange(R){return{s:R.s,e:R.e<today()?R.e:today()}}
+function buckets(R){
+  let s=R.s;if(s==="0000-01-01"){const ds=D.sales.map(x=>x.date).concat(D.expenses.map(x=>x.date)).filter(Boolean).sort();s=ds[0]||today();}
+  const e=R.e<today()?R.e:today();let a=pd(s),b=pd(e);if(b<a)b=new Date(a);
+  const span=Math.round((b-a)/864e5)+1,out=[];
+  if(span<=35){for(let d=new Date(a);d<=b;d.setDate(d.getDate()+1))out.push({s:ymd(d),e:ymd(d),l:d.toLocaleDateString(undefined,{month:"short",day:"numeric"})})}
+  else if(span<=150){for(let d=new Date(a);d<=b;d.setDate(d.getDate()+7)){const z=new Date(d);z.setDate(z.getDate()+6);out.push({s:ymd(d),e:ymd(z),l:d.toLocaleDateString(undefined,{month:"short",day:"numeric"})})}}
+  else{for(let d=new Date(a.getFullYear(),a.getMonth(),1);d<=b;d=new Date(d.getFullYear(),d.getMonth()+1,1))out.push({s:ymd(d),e:ymd(new Date(d.getFullYear(),d.getMonth()+1,0)),l:d.toLocaleDateString(undefined,{month:"short",year:"2-digit"})})}
+  return out;
+}
+const costOf=s=>{const mi=(D.reps.find(r=>r.me)||{}).id;let c=s.repId===mi?0:num(s.repPay);for(const a in (s.ovr||{}))if(a!==mi)c+=s.ovr[a];return c};
+function series(bks){
+  const z=()=>bks.map(()=>0),o={rev:z(),cost:z(),fiber:z(),lines:z(),sold:z()};
+  const ix=d=>{if(!d)return -1;for(let i=0;i<bks.length;i++)if(d>=bks[i].s&&d<=bks[i].e)return i;return -1};
+  D.sales.forEach(s=>{const i=ix(s.date);if(i>=0&&s.status!=="cancelled"&&!s.preQuota)o.sold[i]++;
+    if(s.status==="done"){const j=ix(doneDate(s));if(j>=0){const q=qty(s);o.rev[j]+=num(s.revenue)*q;o.cost[j]+=costOf(s)*q;if(s.type==="phone")o.lines[j]+=q;else o.fiber[j]++}}});
+  D.expenses.forEach(e=>{const i=ix(e.date);if(i>=0)o.cost[i]+=num(e.amount)});
+  return o;
+}
+const niceMax=v=>{if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v))),n=v/p;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*p};
+const short=n=>Math.abs(n)>=1e6?(n/1e6).toFixed(1).replace(/\.0$/,"")+"M":Math.abs(n)>=1e3?(n/1e3).toFixed(1).replace(/\.0$/,"")+"k":String(Math.round(n));
+function spark(vals){const W=100,H=30,mx=Math.max(1,...vals),n=vals.length;if(n<2)return"";const pts=vals.map((v,i)=>[i/(n-1)*W,H-2-(v/mx)*(H-4)]);const d=pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join("");
+  return`<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path class="sp-area" d="${d}L${W} ${H}L0 ${H}Z"/><path class="sp-line" d="${d}"/></svg>`}
+function lineChart(bks,lines,fmt){
+  const W=640,H=220,L=48,Rt=10,Tp=10,B=26,iw=W-L-Rt,ih=H-Tp-B,n=bks.length;const mx=niceMax(Math.max(1,...lines.flatMap(l=>l.v)));
+  const x=i=>L+(n<2?iw/2:i/(n-1)*iw),y=v=>Tp+ih-(v/mx)*ih;let g="";
+  for(let k=0;k<=4;k++){const v=mx*k/4;g+=`<line class="gl" x1="${L}" x2="${W-Rt}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-8}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`}
+  const step=Math.max(1,Math.ceil(n/7));bks.forEach((b,i)=>{if(i%step===0||i===n-1)g+=`<text class="ax" x="${x(i)}" y="${H-6}" text-anchor="${i===0?"start":i===n-1?"end":"middle"}">${esc(b.l)}</text>`});
+  lines.forEach(l=>{const d=l.v.map((v,i)=>(i?"L":"M")+x(i).toFixed(1)+" "+y(v).toFixed(1)).join("");
+    if(l.area)g+=`<path d="${d}L${x(n-1)} ${y(0)}L${x(0)} ${y(0)}Z" fill="${l.c}" opacity=".12"/>`;
+    g+=`<path d="${d}" fill="none" stroke="${l.c}" stroke-width="2.5" stroke-linejoin="round" ${l.dash?'stroke-dasharray="5 4"':""}/>`;
+    const li=n-1;g+=`<circle cx="${x(li)}" cy="${y(l.v[li]||0)}" r="4" fill="${l.c}"/>`});
+  return`<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Trend chart">${g}</svg></div>`;
+}
+function barChart(bks,stacks){
+  const W=640,H=200,L=36,Rt=6,Tp=10,B=26,iw=W-L-Rt,ih=H-Tp-B,n=bks.length;const tot=bks.map((_,i)=>stacks.reduce((a,s)=>a+s.v[i],0));const mx=niceMax(Math.max(1,...tot));
+  const bw=iw/n,y=v=>Tp+ih-(v/mx)*ih;let g="";
+  for(let k=0;k<=4;k++){const v=mx*k/4;g+=`<line class="gl" x1="${L}" x2="${W-Rt}" y1="${y(v)}" y2="${y(v)}"/><text class="ax" x="${L-6}" y="${y(v)+4}" text-anchor="end">${short(v)}</text>`}
+  bks.forEach((b,i)=>{let acc=0;const bx=L+i*bw+bw*.18,w=Math.max(1,bw*.64);stacks.forEach(s=>{const v=s.v[i];if(v>0){g+=`<rect x="${bx}" y="${y(acc+v)}" width="${w}" height="${y(acc)-y(acc+v)}" fill="${s.c}" rx="2"/>`;acc+=v}});});
+  const step=Math.max(1,Math.ceil(n/7));bks.forEach((b,i)=>{if(i%step===0)g+=`<text class="ax" x="${L+i*bw+bw/2}" y="${H-6}" text-anchor="middle">${esc(b.l)}</text>`});
+  return`<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Installs chart">${g}</svg></div>`;
+}
+function delta(cur,prev,invert){if(prev==null)return`<span class="d">All time</span>`;if(!prev&&!cur)return`<span class="d">No change</span>`;if(!prev)return`<span class="d up">New vs last period</span>`;
+  const p=Math.round((cur-prev)/Math.abs(prev)*100);const good=invert?p<=0:p>=0;return`<span class="d ${p===0?"":good?"up":"dn"}">${p>0?"▲":p<0?"▼":""} ${Math.abs(p)}% vs last period</span>`}
+
+function vDash(R){
+  if(!D.reps.length){$("#view").innerHTML=roBanner()+`<div class="panel empty"><b>Start with your team</b>Add yourself first, then the reps under you. Sales, installs and pay roll up from there.<br><button class="btn btn-lime" data-add="reps">Add yourself</button></div>`;return}
+  const C=curRange(R),P=prevRange(R),T=totals(R),TP=P?totals(P):null,bks=buckets(R),S=series(bks);
+  const a=T.all,ap=TP&&TP.all,rate=x=>x.inst+x.cx?x.inst/(x.inst+x.cx)*100:0;
+  const mm=me(),ms=mm?roll([mm.id],T.m):null,mt=mm?roll(downline(mm.id),T.m):a;
+  const margin=a.rev?Math.round(T.net/a.rev*100):0;
+  const kts=[
+    ["Net to Quota",money(T.net),delta(T.net,TP&&TP.net),S.rev.map((v,i)=>v-S.cost[i]),"hero"],
+    ["Revenue",money(a.rev),delta(a.rev,ap&&ap.rev),S.rev],
+    ["Installs",a.inst,delta(a.inst,ap&&ap.inst),S.fiber.map((v,i)=>v+S.lines[i])],
+    ["Sales written",a.sold,delta(a.sold,ap&&ap.sold),S.sold],
+    ["Install rate",Math.round(rate(a))+"%",TP?delta(rate(a),rate(ap)):delta(0,null),null],
+    ["Phone lines",a.lines,delta(a.lines,ap&&ap.lines),S.lines]];
+  const pend=D.sales.filter(s=>s.status==="pending");const age=s=>Math.max(0,Math.round((pd(today())-pd(s.date||today()))/864e5));
+  const ag=[0,0,0];pend.forEach(s=>{const d=age(s);ag[d<=7?0:d<=14?1:2]++});const atStake=pend.reduce((x,s)=>x+num(s.revenue)*qty(s),0);
+  const oldest=[...pend].sort((x,y)=>(x.date||"").localeCompare(y.date||"")).slice(0,5);
+  const rows=D.reps.map(r=>({r,s:T.m[r.id]})).filter(x=>x.s.sold||x.s.inst||x.s.pend).sort((x,y)=>y.s.rev-x.s.rev||y.s.inst-x.s.inst).slice(0,8);
+  const prov={};D.sales.forEach(s=>{if(s.status==="done"&&inR(doneDate(s),R)){const k=s.provider||"Other";prov[k]=prov[k]||{n:0,rev:0,ph:s.type==="phone"};prov[k].n+=s.type==="phone"?qty(s):1;prov[k].rev+=num(s.revenue)*qty(s)}});
+  const pk=Object.entries(prov).sort((x,y)=>y[1].rev-x[1].rev),pmax=Math.max(1,...pk.map(p=>p[1].rev));
+  const plRow=(l,v,cls)=>`<div class="pl-r ${cls||""}"><span>${l}</span><div class="t"><i style="width:${a.rev?Math.min(100,Math.abs(v)/a.rev*100):0}%"></i></div><span>${money(v)}</span></div>`;
+  $("#view").innerHTML=roBanner()+scoreboard(R)+`
+  <div class="kt-row">${kts.map(k=>`<div class="kt ${k[4]||""}"><div class="l">${k[0]}</div><div class="v">${k[1]}</div>${k[2]}${k[3]?spark(k[3]):'<svg aria-hidden="true"></svg>'}</div>`).join("")}</div>
+  <div class="dg">
+    <div class="panel s8"><div class="ph"><h3>Revenue vs cost</h3><div class="lg"><span><i style="background:var(--c-rev)"></i>Revenue in</span><span><i style="background:var(--c-cost)"></i>Payouts + expenses</span></div></div>
+      ${lineChart(bks,[{v:S.rev,c:"var(--c-rev)",area:true},{v:S.cost,c:"var(--c-cost)",dash:true}],v=>"$"+short(v))}</div>
+    <div class="panel s4"><div class="ph"><h3>P&amp;L</h3><span class="sub" style="margin:0">${margin}% margin</span></div>
+      <div class="big">${money(T.net)}</div>
+      <div class="pl">${plRow("Revenue",a.rev,"rev")}${plRow("Rep pay",T.repPay)}${plRow("Rep overrides",T.ovr)}${plRow("Expenses",T.exp)}${plRow("Incentives",T.inc)}${plRow("Net",T.net,"net")}</div></div>
+    <div class="panel s7"><div class="ph"><h3>Installs</h3><div class="lg"><span><i style="background:var(--c-rev)"></i>Fiber</span><span><i style="background:var(--c-ph)"></i>Phone lines</span></div></div>
+      ${barChart(bks,[{v:S.fiber,c:"var(--c-rev)"},{v:S.lines,c:"var(--c-ph)"}])}</div>
+    <div class="panel s5"><div class="ph"><h3>Install pipeline</h3><span class="sub" style="margin:0">${money(atStake)} at stake</span></div>
+      <div class="mini"><div><b>${ag[0]}</b><span>0–7 days</span></div><div><b>${ag[1]}</b><span>8–14 days</span></div><div><b class="${ag[2]?"age-late":""}">${ag[2]}</b><span>15+ days</span></div></div>
+      ${oldest.length?`<div class="tbl"><table><tbody>${oldest.map(s=>`<tr class="click" data-edit="sales" data-id="${s.id}"><td>${esc(s.customer)||esc(s.product)}</td><td>${esc(s.provider)}</td><td>${esc(repName(s.repId))}</td><td class="num ${age(s)>14?"age-late":""}">${age(s)}d</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No pending installs.</p>`}</div>
+    <div class="panel s7"><div class="ph"><h3>Rep performance</h3><button class="btn btn-out btn-sm" data-tab="team">Team view</button></div>
+      <div class="tbl"><table><thead><tr><th>Rep</th><th class="num">Sales</th><th class="num">Installs</th><th class="num">Inst. rate</th><th class="num">Value</th></tr></thead><tbody>
+      ${rows.map(({r,s})=>{const rr=Math.round(rate(s));return`<tr class="click" data-edit="reps" data-id="${r.id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span><span>${esc(r.name)}${r.me?' <span class="pill p-you">You</span>':""}</span></div></td><td class="num">${s.sold}</td><td class="num">${s.inst}</td><td class="num"><div class="rate">${rr}%<span class="t"><i style="width:${rr}%"></i></span></div></td><td class="num">${money(s.rev)}</td></tr>`}).join("")}
+      </tbody></table></div></div>
+    <div class="panel s5"><div class="ph"><h3>Revenue by provider</h3></div>
+      ${pk.length?`<div class="bars">${pk.map(([k,v])=>`<div class="bar-row"><span><b>${esc(k)}</b> · ${v.n} ${v.ph?"lines":"installs"}</span><span>${money(v.rev)}</span><div class="track"><div class="fill ${v.ph?"ph":""}" style="width:${Math.max(3,v.rev/pmax*100)}%"></div></div></div>`).join("")}</div>`:`<p class="sub" style="margin:0">Completed installs and activations show up here by provider.</p>`}
+      ${mm?`<div class="mini" style="margin-top:auto"><div><b>${ms.inst}</b><span>My installs</span></div><div><b>${mt.inst}</b><span>My team's installs</span></div><div><b>$${short(ms.earned+ms.ovr)}</b><span>My pay</span></div></div>`:""}</div>
+  </div>`;
+}
+
+function agg(ids,R){const set=new Set(ids),s={sold:0,inst:0,pend:0,cx:0,pay:0,ppay:0,ovr:0,povr:0,rev:0,prev:0};
+  D.sales.forEach(x=>{if(!set.has(x.repId))return;const q=qty(x),p=num(x.repPay)*q,o=num(x.override)*q,r=num(x.revenue)*q;
+    if(inR(x.date,R)&&!x.preQuota){if(x.status==="cancelled")s.cx++;else s.sold++}
+    if(x.status==="pending"){s.pend++;s.ppay+=p;s.povr+=o;s.prev+=r}
+    if(x.status==="done"&&inR(doneDate(x),R)){s.inst++;s.pay+=p;s.ovr+=o;s.rev+=r}});return s}
+function myOvr(R){const mm=me();let i=0,p=0;if(!mm)return{i,p};D.sales.forEach(s=>{if(s.repId===mm.id)return;const o=(s.ovr&&s.ovr[mm.id])||0;if(!o)return;const q=qty(s);if(s.status==="done"&&inR(doneDate(s),R))i+=o*q;if(s.status==="pending")p+=o*q});return{i,p}}
+function scoreboard(R){const mm=me();if(!mm)return"";
+  const down=downline(mm.id).filter(i=>i!==mm.id),dir=D.reps.filter(r=>r.managerId===mm.id).map(r=>r.id);
+  const MO=myOvr(R);const P=agg([mm.id],R),Tm=agg(down,R),Al=agg(downline(mm.id),R),Dr=agg(dir,R);
+  const cx=s=>s.sold+s.cx?Math.round(s.cx/(s.sold+s.cx)*100)+"% cancel rate":"No sales yet";
+  const card=(t,sub,s,a,b,hero)=>`<div class="panel s4 sc${hero?" sc-hero":""}"><div class="ph"><h3>${t}</h3><span class="sub" style="margin:0">${sub}</span></div>
+   <div class="sc3"><div><b>${s.sold}</b><span>Sales</span></div><div><b>${s.inst}</b><span>Installs</span></div><div><b>${s.pend}</b><span>Pending</span></div></div>
+   <div class="scp"><div><span>${a[0]}</span><b>${money(a[1])}</b></div><div><span>${b[0]}</span><b class="pp">${money(b[1])}</b></div></div></div>`;
+  return`<div class="dg">${card("Personal",esc(mm.name)+" · "+cx(P),P,["Your pay · installed",P.rev+MO.i],["Pending · not installed yet",P.prev+MO.p],true)}
+   ${card("Team",down.length+" reps under you · "+cx(Tm),Tm,["Team value · installed",Tm.rev],["Team pending value",Tm.prev])}
+   ${card("Total","You + team · "+cx(Al),Al,["Quota total · installed",Al.rev],["Pending value",Al.prev])}</div>
+   <p class="sub" style="margin:-6px 0 0">Installs get paid · pending = sold, not installed · values at your scale</p>`}
+function vDashOld(R){
+  const T=totals(R),mm=me(),ms=mm?roll([mm.id],T.m):null,mt=mm?roll(downline(mm.id),T.m):T.all;
+  if(!D.reps.length){$("#view").innerHTML=roBanner()+`<div class="card empty"><b>Start with your team</b>Add yourself first, then the reps under you. Sales, installs and pay roll up from there.<br><button class="btn btn-lime" data-add="reps">Add yourself</button></div>`;return}
+  const rows=D.reps.map(r=>({r,s:T.m[r.id]})).sort((a,b)=>b.s.inst-a.s.inst||b.s.sold-a.s.sold);
+  const prov={};D.sales.forEach(s=>{if(s.status==="done"&&inR(doneDate(s),R)){const k=(s.type==="phone"?"📱":"")+(s.provider||"Other");const key=s.provider||"Other";prov[key]=prov[key]||{n:0,rev:0,ph:s.type==="phone"};prov[key].n+=s.type==="phone"?qty(s):1;prov[key].rev+=num(s.revenue)*qty(s)}});
+  const pk=Object.entries(prov).sort((a,b)=>b[1].rev-a[1].rev),pmax=Math.max(1,...pk.map(p=>p[1].rev));
+  $("#view").innerHTML=roBanner()+`
+  <div class="sec-h"><div><h2>Scoreboard</h2><p class="sub">${fmtD(R.s==="0000-01-01"?"":R.s)} to ${R.e==="9999-12-31"?"today":fmtD(R.e)} · installs count on install date</p></div></div>
+  ${mm?`<div><p class="group-l">You · ${esc(mm.name)}</p><div class="kpis">
+    ${kpi("My sales",ms.sold,ms.pend+" pending install","me")}
+    ${kpi("My installs",ms.inst,ms.fiber+" fiber · "+ms.lines+" lines","me")}
+    ${kpi("My earnings",money(ms.earned+ms.ovr),money(ms.ovr)+" in overrides","me")}
+  </div></div>`:""}
+  <div><p class="group-l">${mm?"Your team (everyone under you)":"Whole org"}</p><div class="kpis">
+    ${kpi("Team sales",mt.sold,mt.cx+" cancelled")}
+    ${kpi("Team installs",mt.inst,"Install rate "+pct(mt.inst,mt.inst+mt.pend+mt.cx))}
+    ${kpi("Fiber installs",mt.fiber,"")}
+    ${kpi("Phone lines",mt.lines,"activated")}
+  </div></div>
+  <div><p class="group-l">Quota revenue</p><div class="pay">
+    <div><div class="l">Revenue in</div><div class="v">${money(T.all.rev)}</div></div>
+    <div><div class="l">Rep payouts</div><div class="v">${money(T.all.earned)}</div></div>
+    <div><div class="l">Overrides</div><div class="v">${money(T.all.ovr)}</div></div>
+    <div><div class="l">Expenses</div><div class="v">${money(T.exp)}</div></div>
+    <div><div class="l">Incentives</div><div class="v">${money(T.inc)}</div></div>
+    <div class="net"><div class="l">Net to Quota</div><div class="v ${T.net<0?"neg":""}">${money(T.net)}</div></div>
+  </div></div>
+  <div class="grid g2">
+    <div class="card"><h3>Leaderboard</h3><div class="tbl"><table><thead><tr><th>Rep</th><th class="num">Sales</th><th class="num">Installs</th><th class="num">Lines</th><th class="num">Earned</th></tr></thead><tbody>
+    ${rows.map(({r,s})=>`<tr class="click" data-edit="reps" data-id="${r.id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span><span>${esc(r.name)} ${r.me?'<span class="pill p-you">You</span>':""}</span></div></td><td class="num">${s.sold}</td><td class="num">${s.inst}</td><td class="num">${s.lines}</td><td class="num">${money(s.earned+s.ovr)}</td></tr>`).join("")}
+    </tbody></table></div></div>
+    <div class="card"><h3>Revenue by provider</h3>${pk.length?`<div class="bars">${pk.map(([k,v])=>`<div class="bar-row"><span><b>${esc(k)}</b> · ${v.n} ${v.ph?"lines":"installs"}</span><span>${money(v.rev)}</span><div class="track"><div class="fill ${v.ph?"ph":""}" style="width:${Math.max(3,v.rev/pmax*100)}%"></div></div></div>`).join("")}</div>`:`<div class="empty"><b>No installs yet this period</b>Mark a sale Installed or Activated and it lands here.</div>`}</div>
+  </div>
+  <div class="card"><h3>Teams</h3>${treeHtml(T.m)}</div>`;
+}
+
+function treeHtml(m){
+  const ids=new Set(D.reps.map(r=>r.id));const roots=D.reps.filter(r=>!r.managerId||!ids.has(r.managerId));const seen=new Set();let h="";
+  const walk=(r,depth)=>{if(seen.has(r.id))return;seen.add(r.id);const t=roll(downline(r.id),m),own=m[r.id]||{};const kids=D.reps.filter(x=>x.managerId===r.id);
+    h+=`<div class="node" data-edit="reps" data-id="${r.id}" role="button" tabindex="0" style="padding-left:${depth*22}px"><div class="n">${depth?'<span class="branch"></span>':""}<span class="av">${esc(initials(r.name))}</span><div style="min-width:0"><b>${esc(r.name)}</b> ${r.me?'<span class="pill p-you">You</span>':""}<div class="sub" style="margin:0">${esc(r.role||"Rep")}${kids.length?" · "+kids.length+" direct":""}${r.market?" · "+esc(r.market):""}</div></div></div>
+    <div class="c hide-s"><strong>${own.inst||0}</strong>own inst.</div><div class="c"><strong>${t.sold}</strong>team sales</div><div class="c"><strong>${t.inst}</strong>team inst.</div></div>`;
+    kids.forEach(k=>walk(k,depth+1))};
+  roots.forEach(r=>walk(r,0));return `<div class="tree">${h}</div>`;
+}
+
+function vSalesOld(R){
+  let list=D.sales.filter(s=>inR(s.date,R)||(s.status==="done"&&inR(doneDate(s),R)));
+  if(salesFilter!=="all")list=list.filter(s=>(s.type||"fiber")===salesFilter);
+  if(salesStatus!=="all")list=list.filter(s=>s.status===salesStatus);
+  list.sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const tot=list.filter(s=>s.status==="done").reduce((a,s)=>({p:a.p+num(s.repPay)*qty(s),r:a.r+num(s.revenue)*qty(s)}),{p:0,r:0});
+  const chip=(v,l,cur,attr)=>`<button class="chip" type="button" ${attr}="${v}" aria-pressed="${cur===v}">${l}</button>`;
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Sales & orders</h2><p class="sub">${list.length} in this period · ${money(tot.r)} revenue · ${money(tot.p)} rep pay on completed</p></div><button class="btn btn-ink" data-add="sales">+ Log sale</button></div>
+  <div class="chips">${chip("all","All","all"===salesFilter&&salesFilter,"data-sf")}${chip("fiber","Fiber",salesFilter,"data-sf")}${chip("phone","Phone orders",salesFilter,"data-sf")}<span style="width:12px"></span>${chip("all","Any status",salesStatus,"data-ss")}${chip("pending","Pending",salesStatus,"data-ss")}${chip("done","Installed / activated",salesStatus,"data-ss")}${chip("cancelled","Cancelled",salesStatus,"data-ss")}</div>
+  <div class="card">${list.length?`<div class="tbl"><table><thead><tr><th>Sold</th><th>Rep</th><th>Provider</th><th>Product</th><th>Customer</th><th>Status</th><th>Installed</th><th class="num">Qty</th><th class="num">Rep pay</th><th class="num">Revenue</th></tr></thead><tbody>
+  ${list.map(s=>`<tr class="click" data-edit="sales" data-id="${s.id}"><td>${fmtD(s.date)}</td><td>${esc(repName(s.repId))}</td><td>${s.type==="phone"?'<span class="pill p-tag">Phone</span> ':""}${esc(s.provider)}</td><td>${esc(s.product)}</td><td>${esc(s.customer)||"—"}</td><td>${statusPill(s)}</td><td>${s.status==="done"?fmtD(doneDate(s)):"—"}</td><td class="num">${qty(s)}</td><td class="num">${money(num(s.repPay)*qty(s))}</td><td class="num">${money(num(s.revenue)*qty(s))}</td></tr>`).join("")}
+  </tbody></table></div>`:`<div class="empty"><b>Nothing logged for this period</b>Log a fiber sale or a phone order. Pay fills in from your pay plans.${canEdit?'<br><button class="btn btn-lime" data-add="sales">Log a sale</button>':""}</div>`}</div>`;
+}
+
+function vTeamOld(R){
+  const T=totals(R);
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Team</h2><p class="sub">Who is under who. Managers earn the override set on each pay plan for their direct reports' completed sales.</p></div><button class="btn btn-ink" data-add="reps">+ Add member</button></div>
+  <div class="card">${D.reps.length?treeHtml(T.m):`<div class="empty"><b>No one on the team yet</b>Add yourself, then each rep with who they report to.</div>`}</div>
+  ${D.reps.length?`<div class="card"><h3>Pay this period</h3><div class="tbl"><table><thead><tr><th>Member</th><th>Reports to</th><th class="num">Sales</th><th class="num">Installs</th><th class="num">Commission</th><th class="num">Overrides</th><th class="num">Total pay</th></tr></thead><tbody>
+  ${D.reps.map(r=>{const s=T.m[r.id];return`<tr class="click" data-edit="reps" data-id="${r.id}"><td>${esc(r.name)}${r.me?' <span class="pill p-you">You</span>':""}</td><td>${r.managerId?esc(repName(r.managerId)):"—"}</td><td class="num">${s.sold}</td><td class="num">${s.inst}</td><td class="num">${money(s.earned)}</td><td class="num">${money(s.ovr)}</td><td class="num"><b>${money(s.earned+s.ovr)}</b></td></tr>`}).join("")}
+  </tbody></table></div></div>`:""}`;
+}
+
+function vPay(){
+  const grp=c=>D.rates.filter(r=>(r.category||"fiber")===c).sort((a,b)=>(a.provider+a.product).localeCompare(b.provider+b.product));
+  const unset=D.rates.filter(r=>!num(r.repPay)&&!num(r.revenue)).length;
+  const tbl=(c,label)=>{const l=grp(c);return`<div class="card"><h3>${label}</h3>${l.length?`<div class="tbl"><table><thead><tr><th>Provider</th><th>Product</th><th>Applies to</th><th class="num">Rep gets</th><th class="num">Manager override</th><th class="num">Your pay scale</th><th class="num">After rep pay</th></tr></thead><tbody>
+  ${l.map(r=>{const unset=!num(r.repPay)&&!num(r.revenue);return`<tr class="click" data-edit="rates" data-id="${r.id}"><td><b>${esc(r.provider)}</b></td><td>${esc(r.product)}${c==="phone"?" <span class='sub'>/ line</span>":""}</td><td>${r.repId?esc(repName(r.repId)):'<span class="pill p-tag">Everyone</span>'}</td>${unset?`<td class="num warn-set" colspan="4">Set amounts</td>`:`<td class="num">${money(num(r.repPay))}</td><td class="num">${money(num(r.override))}</td><td class="num">${money(num(r.revenue))}</td><td class="num"><b>${money(num(r.revenue)-num(r.repPay)-num(r.override))}</b></td>`}</tr>`}).join("")}
+  </tbody></table></div>`:`<div class="empty"><b>No ${label.toLowerCase()} yet</b>Add what each product pays.</div>`}</div>`};
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Pay plans</h2><p class="sub">"Your pay scale" here is the top of the chain: what each product pays you. Each rep is paid their own scale (set on their profile under Reps, per 1 Gig install), adjusted for the product the same way yours is. Every upline earns the difference between their scale and the scale of the person directly below them.</p></div><button class="btn btn-ink" data-add="rates">+ Add rate</button></div>
+  ${unset?`<div class="ro">${unset} product${unset>1?"s":""} still need amounts. Tap a row to set what the rep gets and what Quota gets paid.</div>`:""}
+  ${tbl("fiber","Fiber internet")}${tbl("phone","Phone orders")}`;
+}
+
+function vExp(R){
+  const l=D.expenses.filter(e=>inR(e.date,R)).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const by={};l.forEach(e=>{by[e.category]=(by[e.category]||0)+num(e.amount)});const tot=l.reduce((a,e)=>a+num(e.amount),0);
+  const ks=Object.entries(by).sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...ks.map(k=>k[1]));
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Expenses</h2><p class="sub">${money(tot)} this period · comes out of Quota's net</p></div><button class="btn btn-ink" data-add="expenses">+ Add expense</button></div>
+  <div class="grid g2"><div class="card"><h3>By category</h3>${ks.length?`<div class="bars">${ks.map(([k,v])=>`<div class="bar-row"><span><b>${esc(k)}</b></span><span>${money(v)}</span><div class="track"><div class="fill ph" style="width:${Math.max(3,v/mx*100)}%"></div></div></div>`).join("")}</div>`:`<div class="empty"><b>No expenses this period</b>Travel, flights, rentals and housing for the crew go here.</div>`}</div>
+  <div class="card"><h3>Entries</h3>${l.length?`<div class="tbl"><table><thead><tr><th>Date</th><th>Category</th><th>For</th><th>Note</th><th class="num">Amount</th></tr></thead><tbody>${l.map(e=>`<tr class="click" data-edit="expenses" data-id="${e.id}"><td>${fmtD(e.date)}</td><td>${esc(e.category)}</td><td>${e.repId?esc(repName(e.repId)):esc(e.market)||"Org"}</td><td>${esc(e.note)||"—"}</td><td class="num">${money(num(e.amount))}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nothing logged.</div>`}</div></div>`;
+}
+
+function vInc(){
+  const l=[...D.incentives].sort((a,b)=>(b.end||"").localeCompare(a.end||""));const t=today();
+  const met={installs:"fiber installs",sales:"sales",lines:"phone lines"};
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Incentives</h2><p class="sub">Spiffs, contests and bonuses. Progress counts automatically from logged sales. Earned cost hits net in the period the incentive ends.</p></div><button class="btn btn-ink" data-add="incentives">+ New incentive</button></div>
+  ${l.length?`<div class="grid g2">${l.map(i=>{const p=incProgress(i);const live=t>=i.start&&t<=i.end;const top=p.ids.map(id=>({id,v:p.per[id]||0})).sort((a,b)=>b.v-a.v).slice(0,5);
+    return`<div class="card inc" data-edit="incentives" data-id="${i.id}" role="button" tabindex="0" style="cursor:pointer"><div class="sec-h"><h3 style="margin:0">${esc(i.name)}</h3><span class="pill ${live?"p-done":t<i.start?"p-pend":"p-tag"}">${live?"Live":t<i.start?"Upcoming":"Ended"}</span></div>
+    <div class="sub" style="margin:0">${fmtD(i.start)} to ${fmtD(i.end)} · ${i.scope==="team"?"Team goal":"Each rep"}: ${num(i.target)} ${met[i.metric]||"installs"} → ${money(num(i.reward))}${i.repId?" · "+esc(repName(i.repId))+"'s team":""}</div>
+    ${i.scope==="team"?`<div class="prog"><i style="width:${Math.min(100,p.target?p.tot/p.target*100:0)}%"></i></div><div class="sub" style="margin:0">${p.tot} of ${p.target}${p.hit?" · Hit, "+money(p.cost)+" earned":""}</div>`:
+    top.map(x=>`<div><div class="bar-row" style="margin-bottom:4px"><span>${esc(repName(x.id))}</span><span>${x.v} / ${p.target}</span></div><div class="prog"><i style="width:${Math.min(100,p.target?x.v/p.target*100:0)}%"></i></div></div>`).join("")+`<div class="sub" style="margin:0">${p.hit} qualified · ${money(p.cost)} earned</div>`}
+    ${i.note?`<div class="sub" style="margin:0">${esc(i.note)}</div>`:""}</div>`}).join("")}</div>`:`<div class="card empty"><b>No incentives yet</b>Set a spiff like "10 installs this week, $250" and watch the team chase it.${canEdit?'<br><button class="btn btn-lime" data-add="incentives">Create one</button>':""}</div>`}`;
+}
+
+/* ---------- CRM views ---------- */
+const SF={q:"",rep:"",prov:"",type:"all",status:"all",view:"list",sort:"date",dir:"desc"},RF={q:"",view:"table",sort:"inst",dir:"desc"},ST={s:SF,r:RF};
+const selS=new Set();let repOpen=null;
+const payoutPill=s=>s.status==="done"?(isPaid(s)?'<span class="pill p-done">Paid</span>':`<span class="pill p-pend">Pays ${fmtD(ymd(payDate(s)))}</span>`):(s.status==="cancelled"&&s.paid&&!s.cbDone?'<span class="pill p-cx">Chargeback</span>':'<span class="sub" style="margin:0">—</span>');
+function payroll(R){const m={};D.reps.forEach(r=>m[r.id]={inst:0,comm:0,ovr:0,owedC:0,owedO:0,cb:0,pendC:0,pendO:0});
+  D.sales.forEach(s=>{const q=qty(s),pdn=isPaid(s),x=m[s.repId],p=num(s.repPay)*q,ov=s.ovr||{};
+    if(s.status==="done"){const inP=inR(doneDate(s),R);if(x){if(inP){x.inst++;x.comm+=p}if(!pdn)x.owedC+=p}for(const a in ov){const y=m[a];if(!y)continue;const o=ov[a]*q;if(inP)y.ovr+=o;if(!pdn)y.owedO+=o}}
+    else if(s.status==="pending"){if(x)x.pendC+=p;for(const a in ov)if(m[a])m[a].pendO+=ov[a]*q}
+    else if(s.status==="cancelled"&&s.paid&&!s.cbDone&&x)x.cb+=p});
+  for(const k in m){const x=m[k];x.earned=x.comm+x.ovr;x.owed=x.owedC+x.owedO-x.cb;x.pending=x.pendC+x.pendO}return m}
+function payrollOld(R){
+  const m={};D.reps.forEach(r=>m[r.id]={inst:0,comm:0,ovr:0,owedC:0,owedO:0,cb:0,pendC:0,pendO:0});
+  D.sales.forEach(s=>{const r=m[s.repId];if(!r)return;const q=qty(s),rr=rep(s.repId),mm=me(),p=(mm&&s.repId===mm.id?num(s.revenue):num(s.repPay))*q,o=(rr&&mm&&rr.id!==mm.id?num(rr.myOverride):0)*q,M=o&&mm?m[mm.id]:null;
+    if(s.status==="done"){if(inR(doneDate(s),R)){r.inst++;r.comm+=p;if(M)M.ovr+=o}const pdn=isPaid(s);if(!pdn)r.owedC+=p;if(M&&!(s.ovrPaid||pdn))M.owedO+=o}
+    else if(s.status==="pending"){r.pendC+=p;if(M)M.pendO+=o}
+    else if(s.status==="cancelled"&&s.paid&&!s.cbDone)r.cb+=p});
+  for(const k in m){const x=m[k];x.earned=x.comm+x.ovr;x.owed=x.owedC+x.owedO-x.cb;x.pending=x.pendC+x.pendO}return m;
+}
+function salesList(R,board){const q=SF.q.toLowerCase();
+  return D.sales.filter(s=>(board&&s.status==="pending")||inR(s.date,R)||(s.status==="done"&&inR(doneDate(s),R)))
+   .filter(s=>SF.type==="all"||(s.type||"fiber")===SF.type).filter(s=>board||SF.status==="all"||s.status===SF.status)
+   .filter(s=>!SF.rep||s.repId===SF.rep).filter(s=>!SF.prov||s.provider===SF.prov)
+   .filter(s=>!q||[s.customer,s.provider,s.product,repName(s.repId),s.notes].some(x=>String(x||"").toLowerCase().includes(q)))}
+const SCOLS=[["date","Submitted"],["rep","Rep"],["provider","Provider"],["product","Product"],["customer","Customer"],["status","Status"],["installed","Installed"],["pw","Pay date"],["qty","Qty","num"],["pay","Rep payout","num"],["rev","Value","num"],["payout","Payout"]];
+const sval=(s,k)=>({date:s.date,rep:repName(s.repId),provider:s.provider,product:s.product,customer:s.customer,status:s.status,installed:s.status==="done"?doneDate(s):"",qty:qty(s),pay:num(s.repPay)*qty(s),rev:num(s.revenue)*qty(s),payout:s.paid?1:0,pw:s.status==="done"&&doneDate(s)?ymd(payDate(s)):""})[k];
+function sortBy(l,k,dir,fn){const m=dir==="asc"?1:-1;return l.sort((a,b)=>{const x=fn(a,k),y=fn(b,k);return(typeof x==="number"&&typeof y==="number"?x-y:String(x??"").localeCompare(String(y??"")))*m})}
+const thead=(cols,S,o)=>cols.map(([k,l,c])=>`<th class="${c||""}" data-sort="${o}.${k}" ${S.sort===k?`aria-sort="${S.dir==="asc"?"ascending":"descending"}"`:""}>${l}</th>`).join("");
+
+function vSales(R){
+  const provs=[...new Set(D.sales.map(s=>s.provider).filter(Boolean))].sort();
+  const tb=`<div class="toolbar"><div class="seg"><button type="button" data-view="s.list" aria-pressed="${SF.view==="list"}">List</button><button type="button" data-view="s.board" aria-pressed="${SF.view==="board"}">Pipeline</button></div>
+   <input id="sq" data-f="s.q" type="search" placeholder="Search customer, product…" value="${esc(SF.q)}" aria-label="Search sales">
+   <select id="srep" data-f="s.rep" aria-label="Rep"><option value="">All reps</option>${D.reps.map(r=>`<option value="${r.id}" ${SF.rep===r.id?"selected":""}>${esc(r.name)}</option>`).join("")}</select>
+   <select id="sprov" data-f="s.prov" aria-label="Provider"><option value="">All providers</option>${provs.map(p=>`<option ${SF.prov===p?"selected":""}>${esc(p)}</option>`).join("")}</select>
+   <select id="stype" data-f="s.type" aria-label="Type">${opts([["all","Fiber + phone"],["fiber","Fiber"],["phone","Phone orders"]],SF.type)}</select>
+   ${SF.view==="list"?`<select id="sstat" data-f="s.status" aria-label="Status">${opts([["all","Any status"],["pending","Pending"],["done","Installed / activated"],["cancelled","Cancelled"]],SF.status)}</select>`:""}
+   ${canEdit?`<button class="btn btn-ink btn-sm" data-add="sales" style="margin-left:auto">+ New sale</button>`:""}</div>`;
+  if(SF.view==="board"){const l=salesList(R,true);
+    $("#view").innerHTML=roBanner()+tb+`<div class="board">${[["pending","Pending install"],["done","Installed / activated"],["cancelled","Cancelled"]].map(([k,lab])=>{const c=l.filter(s=>s.status===k).sort((a,b)=>(b.date||"").localeCompare(a.date||""));const v=c.reduce((a,s)=>a+num(s.revenue)*qty(s),0);
+      return`<div class="col" data-col="${k}"><div class="col-h">${lab}<small>${c.length} · ${money(v)}</small></div>${c.map(s=>`<div class="dc" draggable="${canEdit}" data-edit="sales" data-id="${s.id}" tabindex="0" role="button"><b>${esc(s.customer)||esc(s.product)}</b><div class="r"><span>${esc(s.provider)} · ${esc(s.product)}${qty(s)>1?" ×"+qty(s):""}</span><span>${money(num(s.revenue)*qty(s))}</span></div><div class="r"><span>${esc(repName(s.repId))}</span><span>${fmtD(k==="done"?doneDate(s):s.date)}</span></div></div>`).join("")||'<p class="sub" style="margin:4px">Drag a card here</p>'}</div>`}).join("")}</div><p class="sub">Drag a card between columns to change its status. Pending shows every open install, any date.</p>`;return}
+  const l=sortBy(salesList(R),SF.sort,SF.dir,sval);[...selS].forEach(id=>{if(!l.some(s=>s.id===id))selS.delete(id)});
+  const done=l.filter(s=>s.status==="done"),tq=l.reduce((a,s)=>a+qty(s),0),tp=done.reduce((a,s)=>a+num(s.repPay)*qty(s),0),tr=done.reduce((a,s)=>a+num(s.revenue)*qty(s),0),allOn=l.length&&l.every(s=>selS.has(s.id));
+  $("#view").innerHTML=roBanner()+tb+(selS.size&&canEdit?`<div class="bulk"><b>${selS.size} selected</b><button class="btn btn-lime btn-sm" data-bulk="done">Mark installed</button><button class="btn btn-out btn-sm" data-bulk="paid">Mark commission paid</button><button class="btn btn-out btn-sm" data-bulk="cancelled">Mark cancelled</button><button class="btn btn-sm" style="color:#fff;background:none" data-bulk="clear">Clear</button></div>`:"")+
+   `<div class="grid-t">${l.length?`<table><thead><tr><th style="width:32px;cursor:default"><input type="checkbox" data-selall aria-label="Select all" ${allOn?"checked":""}></th>${thead(SCOLS,SF,"s")}</tr></thead><tbody>
+   ${l.map(s=>`<tr class="click" data-edit="sales" data-id="${s.id}"><td><input type="checkbox" data-sel="${s.id}" aria-label="Select sale" ${selS.has(s.id)?"checked":""}></td><td>${fmtD(s.date)}</td><td>${esc(repName(s.repId))}</td><td>${s.type==="phone"?'<span class="pill p-tag">Phone</span> ':""}${esc(s.provider)}</td><td>${esc(s.product)}</td><td>${esc(s.customer)||"—"}</td><td>${statusPill(s)}</td><td>${s.status==="done"?fmtD(doneDate(s)):"—"}</td><td>${s.status==="done"&&doneDate(s)?fmtD(ymd(payDate(s))):"—"}</td><td class="num">${qty(s)}</td><td class="num">${num(s.repPay)?money(num(s.repPay)*qty(s)):"—"}</td><td class="num">${money(num(s.revenue)*qty(s))}</td><td>${payoutPill(s)}</td></tr>`).join("")}
+   </tbody><tfoot><tr><td></td><td colspan="8">${l.length} records · ${done.length} completed</td><td class="num">${tq}</td><td class="num">${money(tp)}</td><td class="num">${money(tr)}</td><td></td></tr></tfoot></table>`:`<div class="empty"><b>No sales match</b>Change the filters or log a new sale.${canEdit?'<br><button class="btn btn-lime" data-add="sales">Log a sale</button>':""}</div>`}</div>`;
+}
+
+const stPill=s=>!s?'<span class="sub" style="margin:0">—</span>':`<span class="pill ${s==="Onboarded"?"p-done":/Failed|Inactive/.test(s)?"p-cx":"p-pend"}">${esc(s)}</span>`;
+const RCOLS=[["name","Rep"],["role","Role"],["mgr","Reports to"],["team","Team"],["status","Status"],["scale","Scale","num"],["sold","Sales","num"],["inst","Installs","num"],["pend","Pending","num"],["rate","Inst. rate","num"],["comm","Commission","num"],["ovr","Your override","num"],["owed","Scheduled","num"]];
+function vTeam(R){
+  const T=totals(R),P=payroll(R),q=RF.q.toLowerCase();
+  const tb=`<div class="toolbar"><div class="seg"><button type="button" data-view="r.table" aria-pressed="${RF.view==="table"}">Table</button><button type="button" data-view="r.tree" aria-pressed="${RF.view==="tree"}">Org chart</button></div>
+   <input id="rq" data-f="r.q" type="search" placeholder="Search reps" value="${esc(RF.q)}" aria-label="Search reps">${canEdit?`<button class="btn btn-ink btn-sm" data-add="reps" style="margin-left:auto">+ Add rep</button>`:""}</div>`;
+  if(!D.reps.length){$("#view").innerHTML=roBanner()+tb+`<div class="panel empty"><b>No reps yet</b>Add yourself, then each rep and who they report to.</div>`;return}
+  if(RF.view==="tree"){$("#view").innerHTML=roBanner()+tb+`<div class="panel">${treeHtml(T.m)}</div>`;return}
+  const rv=(r,k)=>{const s=T.m[r.id],p=P[r.id];return{name:r.name,role:r.role,mgr:r.managerId?repName(r.managerId):"",team:r.team,status:r.status,scale:num(r.scale),sold:s.sold,inst:s.inst,pend:s.pend,rate:s.inst+s.cx?s.inst/(s.inst+s.cx):0,comm:p.comm,ovr:p.ovr,owed:p.owed}[k]};
+  const l=sortBy(D.reps.filter(r=>!q||[r.name,r.market,r.role,r.phone,r.team,r.status,r.email].some(x=>String(x||"").toLowerCase().includes(q))),RF.sort,RF.dir,rv),sum=k=>l.reduce((a,r)=>a+(rv(r,k)||0),0);
+  $("#view").innerHTML=roBanner()+tb+`<div class="grid-t"><table><thead><tr>${thead(RCOLS,RF,"r")}</tr></thead><tbody>${l.map(r=>{const s=T.m[r.id],p=P[r.id],rr=Math.round(rv(r,"rate")*100);
+    return`<tr class="click" data-rep="${r.id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span><span><b>${esc(r.name)}</b>${r.me?' <span class="pill p-you">You</span>':""}${r.phone?`<br><span class="sub" style="margin:0">${esc(r.phone)}</span>`:""}</span></div></td><td>${esc(r.role||"Rep")}</td><td>${r.managerId?esc(repName(r.managerId)):"—"}</td><td>${esc(r.team)||"—"}</td><td>${stPill(r.status)}</td><td class="num">${num(r.scale)?money(num(r.scale))+(num(r.scale2)&&r.scale2From?` <span class="sub" style="margin:0">→ ${money(num(r.scale2))} ${fmtD(r.scale2From)}</span>`:""):"—"}</td><td class="num">${s.sold}</td><td class="num">${s.inst}</td><td class="num">${s.pend}</td><td class="num"><div class="rate">${rr}%<span class="t"><i style="width:${rr}%"></i></span></div></td><td class="num">${money(p.comm)}</td><td class="num">${money(p.ovr)}</td><td class="num"><b>${money(p.owed)}</b></td></tr>`}).join("")}</tbody>
+  <tfoot><tr><td colspan="6">${l.length} reps</td><td class="num">${sum("sold")}</td><td class="num">${sum("inst")}</td><td class="num">${sum("pend")}</td><td></td><td class="num">${money(sum("comm"))}</td><td class="num">${money(sum("ovr"))}</td><td class="num">${money(sum("owed"))}</td></tr></tfoot></table></div>`;
+}
+
+function vCommOld(R){
+  const P=payroll(R),l=D.reps.map(r=>({r,p:P[r.id]})).sort((a,b)=>b.p.owed-a.p.owed||b.p.earned-a.p.earned),tot=k=>l.reduce((a,x)=>a+x.p[k],0);
+  $("#view").innerHTML=roBanner()+`<div class="kt-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+   <div class="kt hero"><div class="l">Owed now</div><div class="v">${money(tot("owed"))}</div><span class="d">Unpaid commission + overrides, minus chargebacks</span></div>
+   <div class="kt"><div class="l">Commission earned</div><div class="v">${money(tot("comm"))}</div><span class="d">Selected period</span></div>
+   <div class="kt"><div class="l">Overrides earned</div><div class="v">${money(tot("ovr"))}</div><span class="d">Selected period</span></div>
+   <div class="kt"><div class="l">Open chargebacks</div><div class="v">${money(tot("cb"))}</div><span class="d">Paid, then cancelled</span></div>
+   <div class="kt"><div class="l">Pending pay</div><div class="v">${money(tot("pending"))}</div><span class="d">Sold, not installed yet</span></div></div>
+  <div class="grid-t">${l.length?`<table><thead><tr><th style="cursor:default">Rep</th><th class="num" style="cursor:default">Installs</th><th class="num" style="cursor:default">Commission</th><th class="num" style="cursor:default">Overrides</th><th class="num" style="cursor:default">Earned</th><th class="num" style="cursor:default">Unpaid</th><th class="num" style="cursor:default">Chargebacks</th><th class="num" style="cursor:default">Pending</th><th class="num" style="cursor:default">Owed now</th><th style="cursor:default"></th></tr></thead><tbody>
+  ${l.map(({r,p})=>`<tr class="click" data-rep="${r.id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span><b>${esc(r.name)}</b></div></td><td class="num">${p.inst}</td><td class="num">${money(p.comm)}</td><td class="num">${money(p.ovr)}</td><td class="num">${money(p.earned)}</td><td class="num">${money(p.owedC+p.owedO)}</td><td class="num">${p.cb?`<span class="age-late">-${money(p.cb)}</span>`:"—"}</td><td class="num" style="color:var(--muted)">${money(p.pending)}</td><td class="num"><b>${money(p.owed)}</b></td><td>${canEdit&&(p.owedC+p.owedO+p.cb)>0?`<button class="btn btn-lime btn-sm" data-payout="${r.id}">Mark paid</button>`:""}</td></tr>`).join("")}
+  </tbody><tfoot><tr><td>${l.length} reps</td><td class="num">${tot("inst")}</td><td class="num">${money(tot("comm"))}</td><td class="num">${money(tot("ovr"))}</td><td class="num">${money(tot("earned"))}</td><td class="num">${money(tot("owedC")+tot("owedO"))}</td><td class="num">${money(tot("cb"))}</td><td class="num">${money(tot("pending"))}</td><td class="num">${money(tot("owed"))}</td><td></td></tr></tfoot></table>`:`<div class="empty"><b>No reps yet</b>Add reps to track what they're owed.</div>`}</div>
+  <p class="sub">Earned counts installs completed in the selected period. Owed now covers every unpaid completed sale from any date. Mark paid clears that rep's unpaid commission, the overrides they earn on their direct reports, and their open chargebacks.</p>`;
+}
+
+function openRep(id){
+  const r=rep(id);if(!r){closeSheet();return}repOpen=id;const R=range(),T=totals(R),s=T.m[id],p=payroll(R)[id];
+  const kids=D.reps.filter(x=>x.managerId===id),sales=D.sales.filter(x=>x.repId===id).sort((a,b)=>(b.date||"").localeCompare(a.date||"")),stmt=sales.filter(x=>x.status==="done"&&inR(doneDate(x),R)),rates=D.rates.filter(x=>x.repId===id);
+  const wasOpen=!!$("#repDrawer"),prev=wasOpen?$(".sheet").scrollTop:0;
+  $("#sheetRoot").innerHTML=`<div class="sheet-back" id="sb"><div class="sheet" id="repDrawer" role="dialog" aria-modal="true" aria-labelledby="sh">
+   <div class="sheet-h"><div class="who"><span class="av av-lg">${esc(initials(r.name))}</span><div><h2 id="sh">${esc(r.name)}</h2><div class="sub" style="margin:0">${esc(r.role||"Rep")}${r.team?" · "+esc(r.team):""}${r.market?" · "+esc(r.market):""}${r.managerId?" · reports to "+esc(repName(r.managerId)):""} ${r.status?stPill(r.status):""}${r.isps?`<br>ISPs: ${esc(r.isps)}`:""}</div></div></div><button class="x" type="button" data-close aria-label="Close">×</button></div>
+   <div class="toolbar" style="margin-bottom:14px">${canEdit?`<button class="btn btn-lime btn-sm" data-logfor="${id}">+ Log sale</button><button class="btn btn-out btn-sm" data-editrep="${id}">Edit rep</button>`:""}<span class="sub" style="margin:0 0 0 auto;user-select:all;text-align:right">${esc(r.phone||"")}${r.email?`<br>${esc(r.email)}`:""}</span></div>
+   <div class="mini" style="grid-template-columns:repeat(4,minmax(0,1fr))"><div><b>${s.sold}</b><span>Sales</span></div><div><b>${s.inst}</b><span>Installs</span></div><div><b>$${short(p.earned)}</b><span>Earned</span></div><div><b>$${short(p.owed)}</b><span>Owed now</span></div></div>
+   <h3 class="dh">Commission statement <span class="sub">${esc($("#period").selectedOptions[0].text)}</span></h3>
+   ${stmt.length?`<div class="tbl"><table><thead><tr><th>Installed</th><th>Customer</th><th>Product</th><th class="num">Pay</th><th>Payout</th></tr></thead><tbody>${stmt.map(x=>`<tr class="click" data-edit="sales" data-id="${x.id}"><td>${fmtD(doneDate(x))}</td><td>${esc(x.customer)||"—"}</td><td>${esc(x.provider)} ${esc(x.product)}${qty(x)>1?" ×"+qty(x):""}</td><td class="num">${money(num(x.repPay)*qty(x))}</td><td>${payoutPill(x)}</td></tr>`).join("")}</tbody><tfoot><tr><td colspan="3"><b>Commission${p.ovr?" (+"+money(p.ovr)+" overrides)":""}</b></td><td class="num"><b>${money(p.comm)}</b></td><td></td></tr></tfoot></table></div>`:`<p class="sub">No completed installs in this period.</p>`}
+   <h3 class="dh">All sales <span class="sub">${sales.length}</span></h3>
+   ${sales.length?`<div class="tbl"><table><tbody>${sales.slice(0,25).map(x=>`<tr class="click" data-edit="sales" data-id="${x.id}"><td>${fmtD(x.date)}</td><td>${esc(x.customer)||esc(x.product)}</td><td>${esc(x.provider)}</td><td>${statusPill(x)}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub">No sales logged yet.</p>`}
+   ${kids.length?`<h3 class="dh">Direct reports <span class="sub">${kids.length}</span></h3><div class="tbl"><table><tbody>${kids.map(k=>{const ks=T.m[k.id];return`<tr class="click" data-rep="${k.id}"><td><div class="who"><span class="av">${esc(initials(k.name))}</span>${esc(k.name)}</div></td><td class="num">${ks.sold} sales</td><td class="num">${ks.inst} inst.</td></tr>`}).join("")}</tbody></table></div>`:""}
+   ${rates.length?`<h3 class="dh">Custom pay rates</h3><div class="tbl"><table><tbody>${rates.map(x=>`<tr class="click" data-edit="rates" data-id="${x.id}"><td>${esc(x.provider)} ${esc(x.product)}</td><td class="num">${money(num(x.repPay))}</td></tr>`).join("")}</tbody></table></div>`:""}
+  </div></div>`;
+  if(wasOpen)$(".sheet").scrollTop=prev;else $("[data-close]").focus();
+  $("#sb").addEventListener("mousedown",e=>{if(e.target.id==="sb")closeSheet()});
+}
+function closeSheet(){repOpen=null;$("#sheetRoot").innerHTML=""}
+async function payout(id){
+  const ds=new Set(D.reps.filter(r=>r.managerId===id).map(r=>r.id)),t=today(),w=[];
+  D.sales.forEach(s=>{const u={};if(s.repId===id){if(s.status==="done"&&!s.paid){u.paid=true;u.paidDate=t}if(s.status==="cancelled"&&s.paid&&!s.cbDone)u.cbDone=true}
+    if(ds.has(s.repId)&&s.status==="done"&&!s.ovrPaid&&num(s.override)>0)u.ovrPaid=true;if(Object.keys(u).length)w.push([s.id,u])});
+  try{for(const [sid,u] of w)await db.collection("sales").doc(sid).update(u);toast(`Marked ${w.length} sale${w.length===1?"":"s"} paid for ${repName(id)}`)}catch(e){toast(errMsg(e))}
+}
+async function bulk(kind){if(kind==="clear"){selS.clear();render();return}const ids=[...selS],t=today();
+  try{for(const id of ids){const s=D.sales.find(x=>x.id===id);if(!s)continue;const u=kind==="paid"?(s.status==="done"?{paid:true,paidDate:t}:null):Object.assign({status:kind},kind==="done"&&!s.installDate?{installDate:t}:{});if(u)await db.collection("sales").doc(id).update(u)}
+    selS.clear();toast(`Updated ${ids.length} sale${ids.length===1?"":"s"}`);render()}catch(e){toast(errMsg(e))}}
+
+/* ---------- payouts ---------- */
+const PAYLAG=14;let payWk="";
+const payDate=s=>{const d=wkStart(pd(doneDate(s)));d.setDate(d.getDate()+18);return d};
+const wkStart=d=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x};
+const wkLabel=k=>{const s=pd(k);s.setDate(s.getDate()-18);const e=new Date(s);e.setDate(e.getDate()+6);return "Fri "+fmtD(k)+" · installs "+fmtD(ymd(s))+"–"+fmtD(ymd(e))};
+function payRows(){const mm=me(),myId=mm&&mm.id;return D.sales.filter(s=>s.status==="done"&&doneDate(s)).map(s=>{const q=qty(s),val=num(s.revenue)*q,own=s.repId===myId?val:0,ov=s.repId===myId?0:((s.ovr&&s.ovr[myId])||0)*q,pdt=payDate(s);return{s,q,val,own,ov,mine:own+ov,pd:ymd(pdt),wk:ymd(pdt)}})}
+function vPayouts(){
+  const rows=payRows(),tw=today(),nf=ymd(new Date(pd(tw).getTime()+6*864e5)),mm=me();
+  const W=new Map();rows.forEach(x=>{const w=W.get(x.wk)||{wk:x.wk,n:0,val:0,own:0,ov:0,mine:0};w.n+=x.q;w.val+=x.val;w.own+=x.own;w.ov+=x.ov;w.mine+=x.mine;W.set(x.wk,w)});
+  const EX={};D.expenses.forEach(e=>{const k=expDay(e);EX[k]=(EX[k]||0)+num(e.amount);if(!W.has(k))W.set(k,{wk:k,n:0,val:0,own:0,ov:0,mine:0})});
+  W.forEach(w=>{w.exp=EX[w.wk]||0;w.net=w.mine-w.exp});
+  const weeks=[...W.values()].sort((a,b)=>b.wk.localeCompare(a.wk));
+  const st=w=>w.wk<=tw?["Paid","p-done"]:w.wk<=nf?["This Friday","p-you"]:["Upcoming","p-pend"];
+  const sum=(f,k)=>weeks.filter(f).reduce((a,w)=>a+w[k],0),all=()=>true;
+  const paid=sum(w=>w.wk<=tw,"mine"),sched=sum(w=>w.wk>tw,"mine");
+  const pend=D.sales.filter(s=>s.status==="pending");
+  const pendMine=pend.reduce((a,s)=>a+(mm&&s.repId===mm.id?num(s.revenue):((s.ovr&&mm&&s.ovr[mm.id])||0))*qty(s),0);
+  const nextW=weeks.filter(w=>w.wk>tw).sort((a,b)=>a.wk.localeCompare(b.wk))[0];
+  const sel=payWk&&W.has(payWk)?payWk:"",scope=sel?rows.filter(x=>x.wk===sel):rows;
+  const per={},gp=k=>per[k]||(per[k]={n:0,val:0,ov:0,rp:0});scope.forEach(x=>{const p=gp(x.s.repId);p.n+=x.q;p.val+=x.val;p.ov+=x.ov;p.rp+=num(x.s.repPay)*x.q;for(const a in (x.s.ovr||{}))if(!(mm&&a===mm.id))gp(a).rp+=x.s.ovr[a]*x.q});
+  const pendBy={};pend.forEach(s=>{pendBy[s.repId]=(pendBy[s.repId]||0)+num(s.revenue)*qty(s)});
+  const repRows=D.reps.map(r=>({r,p:per[r.id]||{n:0,val:0,ov:0,rp:0}})).filter(x=>x.p.n||x.p.rp||(!sel&&pendBy[x.r.id])).sort((a,b)=>b.p.val-a.p.val);
+  const detail=sel?rows.filter(x=>x.wk===sel).sort((a,b)=>a.pd.localeCompare(b.pd)):[];
+  $("#view").innerHTML=roBanner()+`<div class="kt-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+   <div class="kt hero"><div class="l">Next payout</div><div class="v">${money(nextW?nextW.mine:0)}</div><span class="d">${nextW?wkLabel(nextW.wk):"Nothing scheduled"}</span></div>
+   <div class="kt"><div class="l">Paid to date</div><div class="v">${money(paid)}</div><span class="d">Paydays through today</span></div>
+   <div class="kt"><div class="l">Scheduled</div><div class="v">${money(sched)}</div><span class="d">Installed, paying on an upcoming Friday</span></div>
+   <div class="kt"><div class="l">In the pipeline</div><div class="v">${money(pendMine)}</div><span class="d">Your pay once ${pend.length} pending sales install</span></div></div>
+  <div class="panel"><div class="ph"><h3>Payouts by week</h3><span class="sub" style="margin:0">Each Friday pays installs from the Mon–Sun week two weeks earlier · team values at your pay scale</span></div>
+  ${weeks.length?`<div class="tbl"><table><thead><tr><th>Payday</th><th>Status</th><th class="num">Installs</th><th class="num">Quota total</th><th class="num">Your sales</th><th class="num">Overrides</th><th class="num">Your pay</th><th class="num">Expenses</th><th class="num">Net</th></tr></thead><tbody>
+  ${weeks.map(w=>{const [l,c]=st(w);return`<tr class="click" data-pw="${w.wk}"${sel===w.wk?' style="outline:2px solid var(--green);outline-offset:-2px"':""}><td><b>${wkLabel(w.wk)}</b></td><td><span class="pill ${c}">${l}</span></td><td class="num">${w.n}</td><td class="num">${money(w.val)}</td><td class="num">${money(w.own)}</td><td class="num">${money(w.ov)}</td><td class="num">${money(w.mine)}</td><td class="num">${w.exp?"−"+money(w.exp):"—"}</td><td class="num"><b>${money(w.net)}</b></td></tr>`}).join("")}
+  </tbody><tfoot><tr><td colspan="2"><b>All weeks</b></td><td class="num">${sum(all,"n")}</td><td class="num">${money(sum(all,"val"))}</td><td class="num">${money(sum(all,"own"))}</td><td class="num">${money(sum(all,"ov"))}</td><td class="num">${money(sum(all,"mine"))}</td><td class="num">${sum(all,"exp")?"−"+money(sum(all,"exp")):"—"}</td><td class="num"><b>${money(sum(all,"net"))}</b></td></tr></tfoot></table></div>`:`<div class="empty"><b>No installs yet</b>Payouts appear here once sales install.</div>`}</div>
+  <div class="panel"><div class="ph"><h3>Per rep ${sel?"· "+wkLabel(sel):"· all weeks"}</h3>${sel?`<button class="btn btn-out btn-sm" type="button" data-pw="">Show all weeks</button>`:'<span class="sub" style="margin:0">Click a week above to see just that payout</span>'}</div>
+  <div class="tbl"><table><thead><tr><th>Rep</th><th>Team</th><th class="num">Installs</th><th class="num">Value at your scale</th><th class="num">Your override</th>${sel?"":'<th class="num">Pending value</th>'}<th class="num">Rep payout</th></tr></thead><tbody>
+  ${repRows.map(({r,p})=>`<tr class="click" data-rep="${r.id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span>${esc(r.name)}${r.me?' <span class="pill p-you">You</span>':""}</div></td><td>${esc(r.team)||"—"}</td><td class="num">${p.n}</td><td class="num">${money(p.val)}</td><td class="num">${p.ov?money(p.ov):"—"}</td>${sel?"":`<td class="num" style="color:var(--muted)">${money(pendBy[r.id]||0)}</td>`}<td class="num">${r.me?'<span class="sub" style="margin:0">Your pay</span>':num(r.scale)?money(p.rp):'<span class="sub" style="margin:0">Scale not set</span>'}</td></tr>`).join("")}
+  </tbody></table></div></div>
+  ${sel?stmtPanel(sel):""}
+  ${sel?`<div class="panel"><div class="ph"><h3>Installs paid ${wkLabel(sel)}</h3></div><div class="tbl"><table><thead><tr><th>Rep</th><th>Customer</th><th>Product</th><th>Submitted</th><th>Installed</th><th>Pay date</th><th class="num">Value</th><th class="num">Your pay</th></tr></thead><tbody>
+  ${detail.map(x=>`<tr class="click" data-edit="sales" data-id="${x.s.id}"><td>${esc(repName(x.s.repId))}</td><td>${esc(x.s.customer)||"—"}</td><td>${esc(x.s.provider)} ${esc(x.s.product)}</td><td>${fmtD(x.s.date)}</td><td>${fmtD(doneDate(x.s))}</td><td>${fmtD(x.pd)}</td><td class="num">${money(x.val)}</td><td class="num">${money(x.mine)}</td></tr>`).join("")}
+  </tbody></table></div></div>`:""}`;
+}
+
+/* ---------- statements ---------- */
+const nextFri=s=>{const d=pd(s);d.setDate(d.getDate()+((5-d.getDay()+7)%7));return ymd(d)};
+const expDay=e=>e.payday||nextFri(e.date||today());
+function stmtData(k){const rows=payRows().filter(x=>x.wk===k).sort((a,b)=>a.pd.localeCompare(b.pd)||(a.s.repId>b.s.repId?1:-1)),ex=D.expenses.filter(e=>expDay(e)===k);
+  const sm=f=>rows.reduce((a,x)=>a+f(x),0),tv=sm(x=>x.val),own=sm(x=>x.own),ov=sm(x=>x.ov),et=ex.reduce((a,e)=>a+num(e.amount),0);
+  return{rows,ex,tv,own,ov,mine:own+ov,et,net:own+ov-et,n:sm(x=>x.q)}}
+const yr=s=>{const d=pd(s);return d.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric",year:"numeric"})};
+function stmtPanel(k){const S=stmtData(k),mm=me();
+  const ln=(l,v,b,neg)=>`<tr><td>${b?"<b>"+l+"</b>":l}</td><td class="num">${b?"<b>":""}${neg&&v?"−":""}${money(v)}${b?"</b>":""}</td></tr>`;
+  return`<div class="panel"><div class="ph"><h3>Payout statement · ${yr(k)}</h3><div class="toolbar">${canEdit?`<button class="btn btn-out btn-sm" type="button" data-addexp="${k}">+ Add expense</button>`:""}<button class="btn btn-lime btn-sm" type="button" data-stmt="html">Download statement</button><button class="btn btn-out btn-sm" type="button" data-stmt="csv">CSV</button></div></div>
+  <div class="dg"><div class="s5"><div class="tbl"><table><tbody>${ln("Quota total ("+S.n+" installs at your scale)",S.tv)}${ln("Your personal installs",S.own)}${ln("Your overrides",S.ov)}${ln("Your pay",S.mine,1)}${ln("Expenses",S.et,0,1)}${ln("Net after expenses",S.net,1)}</tbody></table></div></div>
+  <div class="s7"><h3 class="dh" style="margin-top:0">Expenses on this payout <span class="sub">${S.ex.length}</span></h3>${S.ex.length?`<div class="tbl"><table><tbody>${S.ex.map(e=>`<tr class="click" data-edit="expenses" data-id="${e.id}"><td>${fmtD(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.note)||"—"}</td><td class="num">${money(num(e.amount))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">None yet. Add travel, rentals, housing or anything else that comes out of this payout.</p>`}</div></div>
+  <p class="sub" style="margin:0">The download is a one-page statement you can send to your manager or save as a PDF. It lists every install, its order number and dates, and the expenses taken out.</p></div>`}
+function stmtHTML(k){const S=stmtData(k),mm=me(),f=pd(k),s0=new Date(f);s0.setDate(s0.getDate()-18);const s1=new Date(s0);s1.setDate(s1.getDate()+6);
+  const tr=(c)=>`<tr>${c.map((x,i)=>`<td${i>=c.length-2&&typeof x==="number"?' class="n"':""}>${typeof x==="number"?money(x):esc(x)}</td>`).join("")}</tr>`;
+  return`<!doctype html><html><head><meta charset="utf-8"><title>Quota payout statement ${k}</title><style>body{font:14px/1.45 -apple-system,"Segoe UI",Arial,sans-serif;color:#17181C;max-width:820px;margin:32px auto;padding:0 20px}h1{font-size:24px;margin:8px 0 2px}h2{font-size:16px;margin:24px 0 6px}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #E1DACB;font-size:13px}th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#5B5A55}.n{text-align:right}.tot td{font-weight:700;border-top:2px solid #17181C}.muted{color:#5B5A55}.brand{display:inline-block;background:#0F1210;color:#C6F135;font-weight:800;padding:4px 10px;border-radius:6px;letter-spacing:.04em}.sig{margin-top:36px;display:flex;gap:40px}.sig div{flex:1;border-top:1px solid #17181C;padding-top:4px;font-size:12px;color:#5B5A55}</style></head><body>
+<span class="brand">QUOTA</span><h1>Payout statement</h1><p class="muted">Payday ${yr(k)} · Installs ${fmtD(ymd(s0))} – ${fmtD(ymd(s1))} · Prepared for ${esc(mm?mm.name:"Quota")} · Generated ${yr(today())}</p>
+<h2>Summary</h2><table><tbody><tr><td>Quota total (${S.n} installs at pay scale)</td><td class="n">${money(S.tv)}</td></tr><tr><td>Personal installs</td><td class="n">${money(S.own)}</td></tr><tr><td>Overrides</td><td class="n">${money(S.ov)}</td></tr><tr><td><b>Pay</b></td><td class="n"><b>${money(S.mine)}</b></td></tr><tr><td>Expenses</td><td class="n">−${money(S.et)}</td></tr><tr class="tot"><td>Net after expenses</td><td class="n">${money(S.net)}</td></tr></tbody></table>
+<h2>Installs (${S.n})</h2><table><thead><tr><th>Rep</th><th>Customer</th><th>Order #</th><th>Product</th><th>Submitted</th><th>Installed</th><th class="n">Value</th><th class="n">Your pay</th></tr></thead><tbody>${S.rows.map(x=>tr([repName(x.s.repId),x.s.customer||"",x.s.id,(x.s.provider||"")+" "+(x.s.product||""),fmtD(x.s.date),fmtD(doneDate(x.s)),x.val,x.mine])).join("")}</tbody></table>
+<h2>Expenses (${S.ex.length})</h2>${S.ex.length?`<table><thead><tr><th>Date</th><th>Category</th><th>For</th><th>Note</th><th class="n">Amount</th></tr></thead><tbody>${S.ex.map(e=>tr([fmtD(e.date),e.category||"",e.repId?repName(e.repId):"Org",e.note||"",num(e.amount)])).join("")}</tbody></table>`:`<p class="muted">No expenses on this payout.</p>`}
+<div class="sig"><div>Reviewed by</div><div>Date</div></div></body></html>`}
+function stmtCSV(k){const S=stmtData(k),q=v=>`"${String(v??"").replace(/"/g,'""')}"`;const L=[["Payday",k],[],["Rep","Customer","Order #","Provider","Product","Submitted","Installed","Value","Your pay"]];
+  S.rows.forEach(x=>L.push([repName(x.s.repId),x.s.customer,x.s.id,x.s.provider,x.s.product,x.s.date,doneDate(x.s),x.val,x.mine]));
+  L.push([],["Expense date","Category","For","Note","Amount"]);S.ex.forEach(e=>L.push([e.date,e.category,e.repId?repName(e.repId):"Org",e.note,num(e.amount)]));
+  L.push([],["Quota total",S.tv],["Personal installs",S.own],["Overrides",S.ov],["Pay",S.mine],["Expenses",-S.et],["Net after expenses",S.net]);
+  return L.map(r=>r.map(q).join(",")).join("\n")}
+async function saveStmt(kind){if(!payWk)return;let d=null;try{d=await window.claude.use("downloads")}catch(e){}
+  if(!d){toast("Downloads aren't available in this view");return}
+  try{await d.save(kind==="csv"?{filename:`quota-payout-${payWk}.csv`,data:stmtCSV(payWk)}:{filename:`quota-payout-${payWk}.html`,data:stmtHTML(payWk)})}catch(e){if(e&&e.code!=="declined")toast("Couldn't save the file")}}
+function payGoalCard(G,MR){const mm=me(),myId=mm&&mm.id;let ownV=0,ownN=0,ovV=0,ovN=0,pOwn=0,pOv=0;
+  D.sales.forEach(x=>{const q=qty(x),r=rep(x.repId),o=r&&x.repId!==myId?num(r.myOverride):0;if(x.status==="done"&&inR(doneDate(x),MR)){if(x.repId===myId){ownV+=num(x.revenue)*q;ownN+=q}else if(o){ovV+=o*q;ovN+=q}}if(x.status==="pending"){if(x.repId===myId)pOwn+=num(x.revenue)*q;else pOv+=o*q}});
+  const pg=num(G.payRev),my=ownV+ovV,gap=Math.max(0,pg-my),oa=ownN?ownV/ownN:350,ovA=50;
+  return`<div class="panel"><div class="ph"><h3>Your pay this month</h3>${pg?`<span class="pill ${my>=pg?"p-done":"p-pend"}">${my>=pg?"Goal hit":Math.round(my/pg*100)+"% of goal"}</span>`:'<span class="sub" style="margin:0">Set a pay goal below</span>'}</div>
+   <div><span class="big">${money(my)}</span> ${pg?`<span class="sub" style="margin:0">of ${money(pg)}</span>`:""}</div>${pg?`<div class="prog"><i style="width:${Math.min(100,my/pg*100)}%"></i></div>`:""}
+   <div class="mini"><div><b>${money(ownV)}</b><span>Personal · ${ownN} installs</span></div><div><b>${money(ovV)}</b><span>Overrides · ${ovN} team installs</span></div><div><b>${money(pOwn+pOv)}</b><span>Pending · ${money(pOwn)} personal, ${money(pOv)} overrides</span></div></div>
+   <p class="sub" style="margin:0">${pg?(gap?`To close the ${money(gap)} gap: about ${Math.ceil(gap/oa)} more personal installs, or ${Math.ceil(gap/ovA)} more team installs at $${ovA} each, or any mix. One personal install is worth ${Math.round(oa/ovA)} team installs to your pay.`:"Pay goal reached."):"The team revenue goal and your own pay move differently: a personal install pays your full scale, a team install pays you the override."}</p></div>`}
+
+/* ---------- my view (rep screen) ---------- */
+ST.m={id:""};
+function vMine(){
+  const mm=me(),id=RV()?RV():(ST.m.id&&rep(ST.m.id))?ST.m.id:(mm?mm.id:(D.reps[0]||{}).id);
+  if(!id){$("#view").innerHTML=`<div class="panel empty"><b>No reps yet</b>Add yourself under Reps.</div>`;return}
+  const r=rep(id),isMe=!!(mm&&id===mm.id),t=today(),T=pd(t);
+  const ovOf=s=>s.repId===id?0:((s.ovr&&s.ovr[id])||0);
+  const myPay=s=>s.repId===id?(isMe?num(s.revenue):num(s.repPay))*qty(s):ovOf(s)*qty(s);
+  const mine=D.sales.filter(s=>s.repId===id),ovS=D.sales.filter(s=>ovOf(s)>0),hasOv=ovS.length>0,both=[...mine,...ovS];
+  const PD={};both.forEach(s=>{if(s.status!=="done"||!doneDate(s))return;const k=ymd(payDate(s)),o=PD[k]||(PD[k]={k,own:0,ov:0,n:0});if(s.repId===id){o.own+=myPay(s);o.n+=qty(s)}else o.ov+=myPay(s)});
+  const pds=Object.values(PD).sort((a,b)=>b.k.localeCompare(a.k)),nx=pds.filter(p=>p.k>t).sort((a,b)=>a.k.localeCompare(b.k)),n1=nx[0],n2=nx[1];
+  const pendOwn=mine.filter(s=>s.status==="pending").sort((a,b)=>(a.date||"").localeCompare(b.date||"")),pendPay=[...pendOwn,...ovS.filter(s=>s.status==="pending")].reduce((a,s)=>a+myPay(s),0);
+  const ws=wkStart(T),we=new Date(ws);we.setDate(we.getDate()+6);const W={s:ymd(ws),e:ymd(we)},M={s:ymd(new Date(T.getFullYear(),T.getMonth(),1)),e:ymd(new Date(T.getFullYear(),T.getMonth()+1,0))};
+  const LM={s:ymd(new Date(T.getFullYear(),T.getMonth()-1,1)),e:ymd(new Date(T.getFullYear(),T.getMonth(),0))};
+  const st=R=>{let s=0,i=0,c=0,cv=0;mine.forEach(x=>{const q=qty(x);if(inR(x.date,R)){if(x.status==="cancelled"){c+=q;cv+=num(x.repPay)*q}else s+=q}if(x.status==="done"&&inR(doneDate(x),R))i+=q});return{s,i,c,cv}},sw=st(W),sm=st(M),sl=st(LM);
+  const payIn=R=>both.filter(s=>s.status==="done"&&inR(doneDate(s),R)).reduce((a,s)=>a+myPay(s),0),mPay=payIn(M),lPay=payIn(LM);
+  const mOwn=mine.filter(s=>s.status==="done"&&inR(doneDate(s),M)).reduce((a,s)=>a+myPay(s),0);
+  const lbFor=R=>D.reps.map(x=>{let i=0,s=0;D.sales.forEach(y=>{if(y.repId!==x.id)return;if(y.status==="done"&&inR(doneDate(y),R))i+=qty(y);if(y.status!=="cancelled"&&inR(y.date,R))s+=qty(y)});return{id:x.id,i,s}}).filter(x=>x.i||x.s).sort((a,b)=>b.i-a.i||b.s-a.s);
+  const lbR=ST.m.lb==="week"?W:M,lb=lbFor(lbR),lbM=lbFor(M),rank=lbM.findIndex(x=>x.id===id)+1;
+  const goal=repMode?num(MYGOAL):num(r.payGoal),noScale=!num(r.scale);
+  const reps=D.reps.slice().sort((a,b)=>(b.me?1:0)-(a.me?1:0)||String(a.name).localeCompare(String(b.name)));
+  const recent=mine.filter(s=>s.status==="done"&&doneDate(s)).sort((a,b)=>doneDate(b).localeCompare(doneDate(a))).slice(0,8);
+  const age=s=>Math.max(0,Math.round((T-pd(s.date||t))/864e5));
+  // earnings chart: last 10 Fridays incl. next 2
+  const fr=[];{const f0=pd(n2?n2.k:n1?n1.k:t);let d=new Date(f0);d.setDate(d.getDate()-((d.getDay()+2)%7));for(let i=9;i>=0;i--){const x=new Date(d);x.setDate(x.getDate()-7*i);fr.push(ymd(x))}}
+  const chartB=fr.map(k=>({l:fmtD(k)})),own=fr.map(k=>(PD[k]||{}).own||0),ovv=fr.map(k=>(PD[k]||{}).ov||0);
+  // pipeline
+  const instNotPaid=both.filter(s=>s.status==="done"&&doneDate(s)&&ymd(payDate(s))>t),paidAll=both.filter(s=>s.status==="done"&&doneDate(s)&&ymd(payDate(s))<=t);
+  const sum=l=>l.reduce((a,s)=>a+myPay(s),0),late=pendOwn.filter(s=>age(s)>14).length;
+  // records
+  const wk={};mine.forEach(s=>{if(s.status==="done"&&doneDate(s)){const k=ymd(wkStart(pd(doneDate(s))));wk[k]=(wk[k]||0)+qty(s)}});
+  const best=Math.max(0,...Object.values(wk)),life=mine.filter(s=>s.status==="done").reduce((a,s)=>a+qty(s),0);
+  let streak=0;{let d=new Date(ws);if(!wk[ymd(d)])d.setDate(d.getDate()-7);while(wk[ymd(d)]){streak++;d.setDate(d.getDate()-7)}}
+  // spiffs
+  const sp=(D.incentives||[]).filter(i=>i.end>=t&&(!i.start||i.start<=t)).map(i=>{const p=incProgress(i);if(!p.ids.includes(id))return null;const v=i.scope==="team"?p.tot:(p.per[id]||0);return{i,v,tg:p.target,team:i.scope==="team"}}).filter(Boolean);
+  // goal pace
+  const per2=num(r.scale)?num(r.scale)+50:(isMe?350:0),need=goal>mPay?goal-mPay:0,ring=goal?Math.min(1,mPay/goal):0,C=2*Math.PI*42;
+  const daysLeft=Math.max(1,Math.round((pd(M.e)-T)/864e5)+1);
+  const G=(D.goals||[]).find(g=>g.id==="main")||{},teamM=G._teamMonthRev!=null?num(G._teamMonthRev):D.sales.filter(s=>s.status==="done"&&inR(doneDate(s),M)).reduce((a,s)=>a+num(s.revenue)*qty(s),0);
+  // my team (leads)
+  const dl=downline(id).filter(x=>x!==id),dlRows=dl.map(x=>{const rr=rep(x);let s=0,i=0,p=0,o=0;D.sales.forEach(y=>{if(y.repId!==x)return;if(y.status!=="cancelled"&&inR(y.date,M))s+=qty(y);if(y.status==="done"&&inR(doneDate(y),M)){i+=qty(y);o+=((y.ovr&&y.ovr[id])||0)*qty(y)}if(y.status==="pending")p++});return{rr,s,i,p,o}}).filter(x=>x.rr).sort((a,b)=>b.i-a.i||b.s-a.s);
+  const dlt=(c,p)=>{if(!p&&!c)return"";if(!p)return`<span class="d up">New this month</span>`;const x=Math.round((c-p)/p*100);return`<span class="d ${x>=0?"up":"dn"}">${x>0?"▲":x<0?"▼":""} ${Math.abs(x)}% vs last month</span>`};
+  const head=repMode?`<div class="toolbar"><span class="sub" style="margin:0">Hi ${esc((r.name||"").split(" ")[0])}. Here's what you're getting paid and what's coming.</span></div>`:`<div class="toolbar"><label for="msel" class="sub" style="margin:0">Viewing as</label><select id="msel" data-f="m.id">${reps.map(x=>`<option value="${x.id}" ${x.id===id?"selected":""}>${esc(x.name)}${x.me?" (you)":""}</option>`).join("")}</select><span class="sub" style="margin:0">${isMe?"Your own numbers, the same screen your reps get.":"Preview of what "+esc(r.name)+" sees on their own login."}</span></div>`;
+  const B={};B.top=`
+  <div class="dg">
+   <div class="panel s5 sc sc-hero"><div class="ph"><h3>Next payday</h3><span class="sub" style="margin:0">${n1?yr(n1.k):"Nothing scheduled yet"}</span></div>
+    <div><span class="big" style="color:var(--lime)">${money(n1?n1.own+n1.ov:0)}</span></div>
+    <div class="scp"><div><span>Personal sales${n1&&n1.n?" · "+n1.n+" installs":""}</span><b>${money(n1?n1.own:0)}</b></div>${hasOv?`<div><span>Overrides</span><b>${money(n1?n1.ov:0)}</b></div>`:""}<div><span>Following Friday${n2?" · "+fmtD(n2.k):""}</span><b class="pp">${money(n2?n2.own+n2.ov:0)}</b></div><div><span>Pending, not installed yet</span><b class="pp">${money(pendPay)}</b></div></div>
+    ${noScale?`<p class="sub" style="margin:0">Pay scale not set yet. Pay shows $0 until it's added.</p>`:""}</div>
+   <div class="panel s7"><div class="ph"><h3>Earnings by payday</h3><div class="lg"><span><i style="background:var(--c-rev)"></i>Personal</span>${hasOv?'<span><i style="background:var(--c-ph)"></i>Overrides</span>':""}</div></div>
+    <div class="mini m4"><div><b>${money(mPay)}</b><span>Earned this month</span>${dlt(mPay,lPay)}</div><div><b>${money(lPay)}</b><span>Last month</span></div><div><b>${sm.i}</b><span>Installs this month</span></div><div><b>${sm.i?money(mOwn/sm.i):"—"}</b><span>Avg per install</span></div></div>
+    ${barChart(chartB,hasOv?[{v:own,c:"var(--c-rev)"},{v:ovv,c:"var(--c-ph)"}]:[{v:own,c:"var(--c-rev)"}]).replace("Installs chart","Pay by Friday")}</div>
+  </div>`;
+  B.pipe=`
+  <div class="panel"><div class="ph"><h3>Pipeline</h3><span class="sub" style="margin:0">Sold → installed → paid</span></div>
+   <div class="stages">
+    <div><span>Sold this month</span><b>${sm.s}</b><small>${sw.s} this week</small></div>
+    <div class="${late?"warn":""}"><span>Waiting on install</span><b>${pendOwn.length}</b><small>${money(sum(pendOwn))}${late?` · ${late} over 14 days`:""}</small></div>
+    <div><span>Installed, payday coming</span><b>${instNotPaid.filter(s=>s.repId===id).length}</b><small>${money(sum(instNotPaid))}</small></div>
+    <div class="ok"><span>Paid</span><b>${money(sum(paidAll))}</b><small>${paidAll.filter(s=>s.repId===id).length} installs all time</small></div>
+    <div class="${sm.c?"bad":""}"><span>Cancelled this month</span><b>${sm.c}</b><small>${sm.c?money(sm.cv)+" lost":"None"}</small></div>
+   </div></div>`;
+  B.lbg=`
+   <div class="panel s6"><div class="ph"><h3>Leaderboard</h3><div class="seg"><button type="button" data-lb="week" aria-pressed="${ST.m.lb==="week"}">Week</button><button type="button" data-lb="month" aria-pressed="${ST.m.lb!=="week"}">Month</button></div></div>
+    ${lb.length?`<div class="tbl"><table><thead><tr><th>#</th><th>Rep</th><th class="num">Sales</th><th class="num">Installs</th></tr></thead><tbody>${lb.slice(0,10).map((x,i)=>`<tr class="${x.id===id?"me-row":""}"><td>${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td><div class="who"><span class="av">${esc(initials(repName(x.id)))}</span><span>${esc(repName(x.id))}${x.id===id?' <span class="pill p-you">You</span>':""}</span></div></td><td class="num">${x.s}</td><td class="num"><b>${x.i}</b></td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No sales yet this ${ST.m.lb==="week"?"week":"month"}.</p>`}
+    <div class="mini" style="margin-top:12px"><div><b>${best}</b><span>Best week (installs)</span></div><div><b>${streak}${streak?"🔥":""}</b><span>Week streak</span></div><div><b>${life}</b><span>Lifetime installs</span></div></div></div>`;
+  B.goals=`<div class="panel s6"><div class="ph"><h3>Goals</h3><span class="sub" style="margin:0">${daysLeft} days left this month</span></div>
+    <div class="goal-r"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" class="rg-bg"/><circle cx="50" cy="50" r="42" class="rg-fg" stroke-dasharray="${(ring*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 50 50)"/><text x="50" y="55" text-anchor="middle">${goal?Math.round(ring*100)+"%":"—"}</text></svg>
+     <div><b>${goal?money(mPay)+" of "+money(goal):"Set a monthly pay goal"}</b><p class="sub">${goal?(need?`${money(need)} to go · about ${per2?Math.ceil(need/per2):"?"} more 2 Gig installs, ${(per2?Math.ceil(need/per2)/Math.max(1,Math.ceil(daysLeft/7)):0).toFixed(1)} a week`:"Goal hit. Raise the bar."):"Pick a number and we'll show the pace to hit it."}</p>
+     ${(canEdit||repMode)?`<div class="toolbar"><input id="mgoal" type="number" min="0" step="50" placeholder="Monthly pay goal ($)" value="${goal||""}" aria-label="Monthly pay goal" style="max-width:170px"><button class="btn btn-out btn-sm" type="button" data-paygoal="${id}">Save</button></div>`:""}</div></div>
+    ${num(G.monthRev)?`<div class="bar-row" style="margin-top:14px"><span><b>Team goal</b> · ${money(teamM)} of ${money(num(G.monthRev))}</span><span>${Math.round(teamM/num(G.monthRev)*100)}%</span></div><div class="prog"><i style="width:${Math.min(100,teamM/num(G.monthRev)*100)}%"></i></div>`:""}
+    <h3 style="font-size:16px;margin:18px 0 8px">Spiffs</h3>
+    ${sp.length?sp.map(x=>`<div class="bar-row"><span><b>${esc(x.i.name)}</b> · ${x.v} of ${x.tg} ${x.i.metric==="sales"?"sales":x.i.metric==="lines"?"lines":"installs"}${x.team?" (team)":""}</span><span>${money(num(x.i.reward))} · ends ${fmtD(x.i.end)}</span></div><div class="prog" style="margin-bottom:10px"><i style="width:${x.tg?Math.min(100,x.v/x.tg*100):0}%"></i></div>`).join(""):`<p class="sub" style="margin:0">No spiffs running right now.</p>`}</div>`;
+  B.team=`
+  ${dlRows.length?`<div class="panel"><div class="ph"><h3>My team</h3><span class="sub" style="margin:0">${dlRows.length} under you · this month</span></div><div class="tbl"><table><thead><tr><th>Rep</th><th class="num">Sales</th><th class="num">Installs</th><th class="num">Waiting</th><th class="num">Your override</th></tr></thead><tbody>${dlRows.map(x=>`<tr><td><div class="who"><span class="av">${esc(initials(x.rr.name))}</span><span>${esc(x.rr.name)}</span></div></td><td class="num">${x.s}</td><td class="num">${x.i}</td><td class="num">${x.p}</td><td class="num"><b>${money(x.o)}</b></td></tr>`).join("")}</tbody><tfoot><tr><td>Team</td><td class="num">${dlRows.reduce((a,x)=>a+x.s,0)}</td><td class="num">${dlRows.reduce((a,x)=>a+x.i,0)}</td><td class="num">${dlRows.reduce((a,x)=>a+x.p,0)}</td><td class="num">${money(dlRows.reduce((a,x)=>a+x.o,0))}</td></tr></tfoot></table></div></div>`:""}`;
+  B.wp=`
+   <div class="panel s6"><div class="ph"><h3>Waiting on install</h3><span class="sub" style="margin:0">Red = 15+ days, call the customer</span></div>
+    ${pendOwn.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Product</th><th>Submitted</th><th class="num">Waiting</th><th class="num">Pay</th></tr></thead><tbody>${pendOwn.map(s=>`<tr class="${repMode?"":"click"}" ${repMode?"":`data-edit="sales" data-id="${s.id}"`}><td>${esc(s.customer)||"—"}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td class="num ${age(s)>14?"age-late":""}">${age(s)}d</td><td class="num">${money(myPay(s))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">Nothing waiting. Every sale has installed or cancelled.</p>`}</div>`;
+  B.pd=`<div class="panel s6"><div class="ph"><h3>Paydays</h3><span class="sub" style="margin:0">Fridays, 2 weeks after the install week</span></div>
+    ${pds.length?`<div class="tbl"><table><thead><tr><th>Friday</th><th>Status</th>${hasOv?'<th class="num">Personal</th><th class="num">Overrides</th>':""}<th class="num">Total</th><th></th></tr></thead><tbody>${pds.slice(0,10).map(p=>`<tr><td>${fmtD(p.k)}</td><td><span class="pill ${p.k<=t?"p-done":"p-pend"}">${p.k<=t?"Paid":"Upcoming"}</span></td>${hasOv?`<td class="num">${money(p.own)}</td><td class="num">${money(p.ov)}</td>`:""}<td class="num"><b>${money(p.own+p.ov)}</b></td><td class="num"><button class="btn btn-out btn-sm" type="button" data-rstmt="${p.k}" aria-label="Download statement for ${fmtD(p.k)}">Statement</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">Paydays appear once sales install.</p>`}</div>`;
+  B.rec=`
+  <div class="panel"><div class="ph"><h3>Recent installs</h3></div>${recent.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Product</th><th>Submitted</th><th>Installed</th><th>Payday</th><th class="num">Pay</th></tr></thead><tbody>${recent.map(s=>`<tr><td>${esc(s.customer)||"—"}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td>${fmtD(doneDate(s))}</td><td>${payoutPill(s)}</td><td class="num">${money(myPay(s))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No installs yet.</p>`}</div>`;
+  const lateL=pendOwn.filter(s=>age(s)>14),soon=pendOwn.filter(s=>age(s)<=14),nextUp=lbM[rank-2];
+  const lbMini=`<div class="panel s6"><div class="ph"><h3>Your rank</h3><button class="btn btn-out btn-sm" type="button" data-tab="r_board">Full board</button></div>
+    <div class="rankbig"><b>${rank?"#"+rank:"—"}</b><span>${rank?`of ${lbM.length} this month · ${sm.i} installs`:"No installs yet this month"}${nextUp?`<br>${nextUp.i-sm.i+1} more install${nextUp.i-sm.i+1>1?"s":""} to pass ${esc((repName(nextUp.id)||"").split(" ")[0])}`:rank===1?"<br>You're leading the team":""}</span></div>
+    <div class="tbl"><table><tbody>${lbM.slice(0,5).map((x,i)=>`<tr class="${x.id===id?"me-row":""}"><td style="width:36px">${i<3?["🥇","🥈","🥉"][i]:i+1}</td><td>${esc(repName(x.id))}</td><td class="num"><b>${x.i}</b> installs</td></tr>`).join("")}</tbody></table></div></div>`;
+  const attn=`<div class="panel s6"><div class="ph"><h3>To do</h3><span class="sub" style="margin:0">Keep your pay from slipping</span></div>
+    ${lateL.length?lateL.map(s=>`<div class="todo bad"><b>Call ${esc(s.customer)||"customer"}</b><span>Waiting ${age(s)} days on install · ${money(myPay(s))} on the line</span></div>`).join(""):""}
+    ${soon.length?`<div class="todo"><b>${soon.length} install${soon.length>1?"s":""} on the way</b><span>${soon.map(s=>esc((s.customer||"").split(" ")[0])).join(", ")} · ${money(sum(soon))}</span></div>`:""}
+    ${goal&&need?`<div class="todo"><b>${per2?Math.ceil(need/per2):"?"} more 2 Gig installs to hit your goal</b><span>${money(need)} to go · ${daysLeft} days left</span></div>`:!goal?`<div class="todo"><b>Set a monthly pay goal</b><span><button class="btn btn-out btn-sm" type="button" data-tab="r_goals">Go to Goals</button></span></div>`:""}
+    ${sp.map(x=>`<div class="todo"><b>${esc(x.i.name)}: ${Math.max(0,x.tg-x.v)} to go</b><span>${money(num(x.i.reward))} · ends ${fmtD(x.i.end)}</span></div>`).join("")}
+    ${!lateL.length&&!soon.length&&!sp.length&&goal&&!need?`<p class="sub" style="margin:0">All caught up.</p>`:""}</div>`;
+  const dg=(...x)=>`<div class="dg">${x.join("")}</div>`,full=x=>x.replace('class="panel s6"','class="panel"'),sec=tab.startsWith("r_")?tab:null;
+  const cx=mine.filter(s=>s.status==="cancelled").sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const cxP=`<div class="panel"><div class="ph"><h3>Cancelled</h3><span class="sub" style="margin:0">${cx.length} all time</span></div>${cx.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Product</th><th>Submitted</th><th class="num">Pay lost</th></tr></thead><tbody>${cx.map(s=>`<tr><td>${esc(s.customer)||"—"}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td class="num">${money(num(s.repPay)*qty(s))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No cancels. Keep it that way.</p>`}</div>`;
+  const pv=previewRep?`<div class="pvbar"><b>Rep portal preview</b><span>Exactly what ${esc(r.name)} sees</span><select data-f="pv" aria-label="Preview as">${reps.map(x=>`<option value="${x.id}" ${x.id===id?"selected":""}>${esc(x.name)}</option>`).join("")}</select><button class="btn btn-lime btn-sm" type="button" data-pvexit="1">Exit preview</button></div>`:"";
+  const hi=RV()?`<div class="toolbar"><span class="sub" style="margin:0">Hi ${esc((r.name||"").split(" ")[0])}. Here's what you're getting paid and what's coming.</span></div>`:head+`<div class="toolbar"><button class="btn btn-ink btn-sm" type="button" data-pv="${id}">Preview ${isMe?"the":"their"} rep portal</button></div>`;
+  $("#view").innerHTML=pv+({
+    r_home:()=>hi+B.top+B.pipe+dg(attn,lbMini)+dg(B.goals,B.pd),
+    r_pay:()=>B.top+dg(B.pd,full(B.wp).replace("panel s6","panel s6"))+B.rec,
+    r_pipe:()=>B.pipe+full(B.wp)+cxP+B.rec,
+    r_board:()=>full(B.lbg),
+    r_goals:()=>full(B.goals),
+    r_team:()=>B.team||`<div class="panel empty"><b>No one under you yet</b>Recruit a rep and their numbers show up here.</div>`
+  }[sec]||(()=>hi+B.top+B.pipe+dg(B.lbg,B.goals)+B.team+dg(B.wp,B.pd)+B.rec))();
+  MINE_CTX={id,isMe,myPay,both};
+}
+async function repStmt(k){const c=MINE_CTX;if(!c)return;const r=rep(c.id);let d=null;try{d=await window.claude.use("downloads")}catch(e){}
+  if(!d){toast("Downloads aren't available in this view");return}
+  const l=c.both.filter(s=>s.status==="done"&&doneDate(s)&&ymd(payDate(s))===k).sort((a,b)=>doneDate(a).localeCompare(doneDate(b)));
+  const tot=l.reduce((a,s)=>a+c.myPay(s),0),row=s=>`<tr><td>${esc(s.customer)||"—"}</td><td>${s.repId===c.id?"Personal":"Override · "+esc(repName(s.repId))}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td>${fmtD(doneDate(s))}</td><td style="text-align:right">${money(c.myPay(s))}</td></tr>`;
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>Quota pay statement ${k}</title><style>body{font-family:system-ui,sans-serif;color:#17181C;max-width:820px;margin:32px auto;padding:0 16px}h1{margin:0}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:14px}.t{font-size:28px;font-weight:700;margin-top:6px}</style></head><body><h1>Quota · Pay statement</h1><p>${esc(r.name)} · Payday ${yr(k)}</p><div class="t">${money(tot)}</div><table><thead><tr><th>Customer</th><th>Type</th><th>Product</th><th>Submitted</th><th>Installed</th><th style="text-align:right">Pay</th></tr></thead><tbody>${l.map(row).join("")}</tbody><tfoot><tr><th colspan="5">Total · ${l.length} installs</th><th style="text-align:right">${money(tot)}</th></tr></tfoot></table></body></html>`;
+  try{await d.save({filename:`quota-pay-${(r.name||"rep").split(" ")[0].toLowerCase()}-${k}.html`,data:html})}catch(e){if(e&&e.code!=="declined")toast("Couldn't save the file")}}
+async function savePayGoal(id){const v=num(($("#mgoal")||{}).value);try{if(repMode){await db.doc("data/users/"+myUid+"/prefs").set({payGoal:v});MYGOAL=v;render()}else await db.collection("reps").doc(id).update({payGoal:v});toast("Pay goal saved")}catch(e){toast(errMsg(e))}}
+
+/* ---------- commissions + goals ---------- */
+const isPaid=s=>s.paid===true||(s.status==="done"&&!!doneDate(s)&&ymd(payDate(s))<=today());
+function ovPanel(R){const t=today(),E={};
+  D.sales.forEach(s=>{if(s.status!=="done"||!doneDate(s)||!s.ovr)return;const q=qty(s),inP=inR(doneDate(s),R),paid=ymd(payDate(s))<=t;
+    for(const a in s.ovr){const o=s.ovr[a]*q;if(!o||!rep(a))continue;const x=E[a]||(E[a]={n:0,amt:0,paid:0,sched:0,from:{}});
+      if(inP){x.n+=q;x.amt+=o;x.from[s.repId]=(x.from[s.repId]||0)+o}if(paid)x.paid+=o;else x.sched+=o}});
+  const l=Object.entries(E).filter(([,x])=>x.amt||x.sched).sort((a,b)=>b[1].amt-a[1].amt||b[1].sched-a[1].sched);
+  const sc=r=>num(r.scale)?money(num(r.scale)):"—";
+  return`<div class="panel"><div class="ph"><h3>Overrides by rep</h3><span class="sub" style="margin:0">What every upline earns on the people below them</span></div>
+  ${l.length?`<div class="tbl"><table><thead><tr><th>Rep</th><th class="num">Scale</th><th>Earned from</th><th class="num">Installs</th><th class="num">Overrides</th><th class="num">Paid to date</th><th class="num">Scheduled</th></tr></thead><tbody>
+  ${l.map(([id,x])=>{const r=rep(id);return`<tr class="click" data-rep="${id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span><b>${esc(r.name)}</b>${r.me?' <span class="pill p-you">You</span>':""}</div></td><td class="num">${sc(r)}</td><td>${Object.entries(x.from).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${esc((repName(k)||"").split(" ")[0])} ${money(v)}`).join(" · ")||"—"}</td><td class="num">${x.n}</td><td class="num"><b>${money(x.amt)}</b></td><td class="num">${money(x.paid)}</td><td class="num">${money(x.sched)}</td></tr>`}).join("")}
+  </tbody><tfoot><tr><td colspan="3">${l.length} reps earning overrides</td><td class="num">${l.reduce((a,[,x])=>a+x.n,0)}</td><td class="num">${money(l.reduce((a,[,x])=>a+x.amt,0))}</td><td class="num">${money(l.reduce((a,[,x])=>a+x.paid,0))}</td><td class="num">${money(l.reduce((a,[,x])=>a+x.sched,0))}</td></tr></tfoot></table></div>`:`<p class="sub" style="margin:0">No override installs in this period.</p>`}</div>`}
+function vComm(R){
+  const mm=me(),myId=mm&&mm.id,t=today(),per={};
+  D.reps.forEach(r=>per[r.id]={n:0,val:0,rp:0,ov:0,mine:0,paid:0,sched:0});
+  D.sales.forEach(s=>{if(s.status!=="done"||!doneDate(s))return;const x=per[s.repId];if(!x)return;
+    const q=qty(s),r=rep(s.repId),val=num(s.revenue)*q,ov=s.repId===myId?0:((s.ovr&&s.ovr[myId])||0)*q,mine=s.repId===myId?val:ov;
+    if(inR(doneDate(s),R)){x.n+=q;x.val+=val;x.rp+=num(s.repPay)*q;x.ov+=ov;x.mine+=mine;for(const a in (s.ovr||{}))if(a!==myId&&per[a])per[a].rp+=s.ovr[a]*q}
+    if(ymd(payDate(s))<=t)x.paid+=mine;else x.sched+=mine});
+  const l=D.reps.map(r=>({r,p:per[r.id]})).filter(x=>x.p.n||x.p.rp||x.p.paid||x.p.sched).sort((a,b)=>b.p.mine-a.p.mine||b.p.val-a.p.val||b.p.rp-a.p.rp);
+  const tot=k=>l.reduce((a,x)=>a+x.p[k],0),pl=$("#period").selectedOptions[0].text;
+  $("#view").innerHTML=roBanner()+`<div class="kt-row" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
+   <div class="kt hero"><div class="l">Your pay</div><div class="v">${money(tot("mine"))}</div><span class="d">${esc(pl)} · your installs + overrides</span></div>
+   <div class="kt"><div class="l">Team value</div><div class="v">${money(tot("val"))}</div><span class="d">${esc(pl)} · at your pay scale</span></div>
+   <div class="kt"><div class="l">Paid to you</div><div class="v">${money(tot("paid"))}</div><span class="d">All time · payday has passed</span></div>
+   <div class="kt"><div class="l">Scheduled</div><div class="v">${money(tot("sched"))}</div><span class="d">Installed · paying on an upcoming Friday</span></div></div>
+  <div class="grid-t">${l.length?`<table><thead><tr><th style="cursor:default">Rep</th><th style="cursor:default">Team</th><th class="num" style="cursor:default">Installs</th><th class="num" style="cursor:default">Value at your scale</th><th class="num" style="cursor:default">Rep payout</th><th class="num" style="cursor:default">Your override</th><th class="num" style="cursor:default">Your pay</th><th class="num" style="cursor:default">Paid to date</th><th class="num" style="cursor:default">Scheduled</th></tr></thead><tbody>
+  ${l.map(({r,p})=>`<tr class="click" data-rep="${r.id}"><td><div class="who"><span class="av">${esc(initials(r.name))}</span><b>${esc(r.name)}</b>${r.me?' <span class="pill p-you">You</span>':""}</div></td><td>${esc(r.team)||"—"}</td><td class="num">${p.n}</td><td class="num">${money(p.val)}</td><td class="num">${r.me?"—":num(r.scale)?money(p.rp):'<span class="sub" style="margin:0">Not set</span>'}</td><td class="num">${r.me?"—":p.ov?money(p.ov):"—"}</td><td class="num"><b>${money(p.mine)}</b></td><td class="num">${money(p.paid)}</td><td class="num">${money(p.sched)}</td></tr>`).join("")}
+  </tbody><tfoot><tr><td colspan="2">${l.length} reps</td><td class="num">${tot("n")}</td><td class="num">${money(tot("val"))}</td><td class="num">${money(l.filter(x=>!x.r.me).reduce((a,x)=>a+x.p.rp,0))}</td><td class="num">${money(tot("ov"))}</td><td class="num">${money(tot("mine"))}</td><td class="num">${money(tot("paid"))}</td><td class="num">${money(tot("sched"))}</td></tr></tfoot></table>`:`<div class="empty"><b>No installs yet</b>Commissions appear once sales install.</div>`}</div>
+  ${ovPanel(R)}
+  <p class="sub">Installs, value, override and your pay follow the period picker. Paid and Scheduled are all time: an install counts as paid once its Friday payday passes. Rep payout is each rep's own installs at their scale plus the overrides they earn on reps they recruited.</p>`;
+}
+function vGoals(){
+  const G=(D.goals||[]).find(g=>g.id==="main")||{},t=today(),T=pd(t),dim=new Date(T.getFullYear(),T.getMonth()+1,0).getDate();
+  const mon=num(G.monthRev),wk=num(G.weekRev)||mon*7/dim,dy=num(G.dayRev)||mon/dim;
+  const dn=D.sales.filter(s=>s.status==="done"),nq=dn.reduce((a,s)=>a+qty(s),0),cxn=D.sales.filter(s=>s.status==="cancelled").length;
+  const avg=(nq&&dn.reduce((a,s)=>a+num(s.revenue)*qty(s),0)/nq)||350,ir=dn.length+cxn?dn.length/(dn.length+cxn):0.6;
+  const ws=wkStart(T),we=new Date(ws);we.setDate(we.getDate()+6);const ms=new Date(T.getFullYear(),T.getMonth(),1),mend=new Date(T.getFullYear(),T.getMonth()+1,0);
+  const per=[["Today",dy,t,t,1,1],["This week",wk,ymd(ws),ymd(we),Math.round((T-ws)/864e5)+1,7],["This month",mon,ymd(ms),ymd(mend),T.getDate(),dim]];
+  const card=([lab,goal,s,e,el,len])=>{const R={s,e};let iv=0,ic=0,sv=0,sc=0;D.sales.forEach(x=>{const q=qty(x);if(x.status==="done"&&inR(doneDate(x),R)){iv+=num(x.revenue)*q;ic+=q}if(x.status!=="cancelled"&&inR(x.date,R)){sv+=num(x.revenue)*q;sc+=q}});
+    if(!goal)return`<div class="panel s4"><div class="ph"><h3>${lab}</h3></div><p class="sub" style="margin:0">Set a monthly goal below to see targets.</p><div class="sc3"><div><b>${ic}</b><span>Installs</span></div><div><b>${sc}</b><span>Sales</span></div><div><b>$${short(iv)}</b><span>Installed</span></div></div></div>`;
+    const ni=Math.ceil(goal/avg),ns=Math.ceil(ni/ir),ex=goal*el/len,left=Math.max(0,goal-iv),dl=Math.max(1,len-el+1),pc=Math.min(100,iv/goal*100),hit=iv>=goal,on=iv>=ex;
+    return`<div class="panel s4"><div class="ph"><h3>${lab}</h3><span class="pill ${hit||on?"p-done":"p-pend"}">${hit?"Goal hit":on?"On pace":"Behind pace"}</span></div>
+     <div><span class="big">${money(iv)}</span> <span class="sub" style="margin:0">of ${money(goal)} installed</span></div>
+     <div class="prog"><i style="width:${pc}%"></i></div>
+     <div class="sc3"><div><b>${ic}<small style="font-size:14px;color:var(--muted)"> / ${ni}</small></b><span>Installs vs needed</span></div><div><b>${sc}<small style="font-size:14px;color:var(--muted)"> / ${ns}</small></b><span>Sales vs needed</span></div><div><b>$${short(sv)}</b><span>New sales value</span></div></div>
+     <p class="sub" style="margin:0">${hit?"Target reached.":len>1?`Need ${money(left)} more, about ${Math.round(left/avg/dl*10)/10} installs a day over ${dl} day${dl>1?"s":""}. On pace means ${money(ex)} by today.`:`Need ${money(left)} more today, about ${Math.ceil(left/avg)} installs.`}</p></div>`};
+  const MR={s:ymd(ms),e:ymd(mend)},rows=D.reps.map(r=>{let s=0,i=0,v=0;D.sales.forEach(x=>{if(x.repId!==r.id)return;const q=qty(x);if(x.status!=="cancelled"&&inR(x.date,MR))s+=q;if(x.status==="done"&&inR(doneDate(x),MR)){i+=q;v+=num(x.revenue)*q}});return{r,s,i,v}}).filter(x=>x.s||x.i).sort((a,b)=>b.v-a.v||b.s-a.s);
+  const totv=rows.reduce((a,x)=>a+x.v,0);
+  $("#view").innerHTML=roBanner()+`<div class="dg">${per.map(card).join("")}</div>
+
+  <div class="panel"><div class="ph"><h3>How targets are figured</h3></div><p class="sub" style="margin:0">An install is worth <b>${money(avg)}</b> on average at your pay scale, and <b>${Math.round(ir*100)}%</b> of sales that resolve end up installed (the rest cancel). So each ${money(Math.round(avg))} of goal takes about 1 install and ${Math.round(1/ir*10)/10} sales. Revenue counts on the install date, the same way The League pays.</p></div>
+  <div class="dg"><div class="panel s5"><div class="ph"><h3>Goals</h3><span class="sub" style="margin:0">Team revenue at your pay scale</span></div>
+   ${canEdit?`<form class="f" id="gform" onsubmit="return false"><div class="fld full"><label for="g_month">Team monthly revenue goal ($)</label><input id="g_month" type="number" min="0" step="50" value="${mon||""}" placeholder="e.g. 20000"></div>
+   <div class="fld"><label for="g_week">Weekly goal ($)</label><input id="g_week" type="number" min="0" step="50" value="${num(G.weekRev)||""}" placeholder="Auto: ${money(wk)}"></div>
+   <div class="fld"><label for="g_day">Daily goal ($)</label><input id="g_day" type="number" min="0" step="10" value="${num(G.dayRev)||""}" placeholder="Auto: ${money(dy)}"></div>
+   <div class="acts"><button class="btn btn-lime btn-sm" type="button" data-savegoals>Save goals</button></div></form><p class="sub" style="margin:0">Leave weekly or daily blank to split the monthly goal evenly over the month's ${dim} days.</p>`:`<p class="sub">Monthly ${money(mon)} · weekly ${money(wk)} · daily ${money(dy)}</p>`}</div>
+   <div class="panel s7"><div class="ph"><h3>This month by rep</h3><span class="sub" style="margin:0">Share of installed value</span></div>
+   ${rows.length?`<div class="tbl"><table><thead><tr><th>Rep</th><th class="num">Sales</th><th class="num">Installs</th><th class="num">Installed value</th><th class="num">Share</th></tr></thead><tbody>${rows.map(x=>`<tr class="click" data-rep="${x.r.id}"><td><div class="who"><span class="av">${esc(initials(x.r.name))}</span>${esc(x.r.name)}</div></td><td class="num">${x.s}</td><td class="num">${x.i}</td><td class="num">${money(x.v)}</td><td class="num">${totv?Math.round(x.v/totv*100):0}%</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub">No sales yet this month.</p>`}</div></div>`;
+}
+async function saveGoals(){const v=id=>num(($("#"+id)||{}).value);try{await db.collection("goals").doc("main").set({monthRev:v("g_month"),payRev:v("g_pay"),weekRev:v("g_week"),dayRev:v("g_day"),updatedAt:new Date().toISOString()});toast("Goals saved")}catch(e){toast(errMsg(e))}}
+
+/* ---------- forms ---------- */
+const repOpts=(blank)=>(blank?`<option value="">${blank}</option>`:"")+D.reps.map(r=>`<option value="${r.id}">${esc(r.name)}${r.me?" (you)":""}</option>`).join("");
+const opts=(arr,v)=>arr.map(a=>{const [val,l]=Array.isArray(a)?a:[a,a];return`<option value="${esc(val)}" ${String(v)===String(val)?"selected":""}>${esc(l)}</option>`}).join("");
+const dl=(id,arr)=>`<datalist id="${id}">${[...new Set(arr)].map(a=>`<option value="${esc(a)}">`).join("")}</datalist>`;
+const F=(id,label,inner,cls,hint)=>`<div class="fld ${cls||""}"><label for="f_${id}">${label}</label>${inner}${hint?`<small>${hint}</small>`:""}</div>`;
+const inp=(id,v,type,extra)=>`<input id="f_${id}" name="${id}" type="${type||"text"}" value="${esc(v??"")}" ${extra||""}>`;
+
+const FORMS={
+ reps:{t:"Team member",body:r=>`${F("name","Name",inp("name",r.name,"text","required"),"full")}
+  ${F("role","Role",`<select id="f_role" name="role">${opts(ROLES,r.role||"Rep")}</select>`)}
+  ${F("managerId","Reports to",`<select id="f_managerId" name="managerId">${repOpts("No one (top of the tree)")}</select>`)}
+  ${F("market","Market",inp("market",r.market,"text",'placeholder="City or territory"'))}
+  ${F("phone","Phone",inp("phone",r.phone,"tel"))}
+  ${F("email","Email",inp("email",r.email,"email"))}
+  ${F("team","Team",inp("team",r.team,"text",'list="dlTeam" placeholder="Team Quota"'))}
+  ${F("status","Status",`<select id="f_status" name="status">${opts(["Onboarded","Onboarding","Background check","Invited","Failed background check","Inactive"],r.status||"Onboarded")}</select>`)}
+  ${F("isps","ISPs assigned",inp("isps",r.isps,"text",'placeholder="Kinetic, Brightspeed…"'))}
+  ${F("scale","Pay scale ($ per 1 Gig install)",inp("scale",r.scale,"number",'step="5" min="0"'),"","2 Gig and other products adjust by the same amount your scale does")}
+  ${F("scale2","New pay scale ($)",inp("scale2",r.scale2,"number",'step="5" min="0"'),"","Optional, for a raise")}
+  ${F("scale2From","New scale starts (install date)",inp("scale2From",r.scale2From,"date"),"full")}
+  ${dl("dlTeam",["Team Quota","Team Six"].concat(D.reps.map(x=>x.team).filter(Boolean)))}
+  <div class="fld chk full"><input id="f_me" name="me" type="checkbox" ${r.me?"checked":""}><label for="f_me">This is me (powers the "You" numbers)</label></div>`,
+  sel:r=>({managerId:r.managerId||""}),num:["scale","scale2"]},
+ rates:{t:"Pay plan rate",body:r=>`${F("category","Type",`<select id="f_category" name="category">${opts([["fiber","Fiber internet"],["phone","Phone order (per line)"]],r.category||"fiber")}</select>`)}
+  ${F("provider","Provider",inp("provider",r.provider,"text",'list="dlProv" required'))}
+  ${F("product","Product",inp("product",r.product,"text",'list="dlProd" required placeholder="1 Gig, New line…"'))}
+  ${F("repId","Applies to",`<select id="f_repId" name="repId">${repOpts("Everyone (default)")}</select>`,"","Pick a rep to give them a custom rate")}
+  ${F("repPay","Rep gets ($)",inp("repPay",r.repPay,"number",'inputmode="decimal" step="0.01" min="0"'))}
+  ${F("override","Manager override ($)",inp("override",r.override,"number",'inputmode="decimal" step="0.01" min="0"'))}
+  ${F("revenue","Your pay scale ($)",inp("revenue",r.revenue,"number",'inputmode="decimal" step="0.01" min="0"'),"full","What the ISP, carrier or partner pays Quota per unit")}
+  ${dl("dlProv",FIBER_PROV.concat(PHONE_PROV,D.rates.map(x=>x.provider)))}${dl("dlProd",FIBER_PROD.concat(PHONE_PROD,D.rates.map(x=>x.product)))}`,
+  sel:r=>({repId:r.repId||""}),num:["repPay","override","revenue"]},
+ sales:{t:"Sale or order",body:s=>`${F("type","Type",`<select id="f_type" name="type">${opts([["fiber","Fiber internet"],["phone","Phone order"]],s.type||"fiber")}</select>`)}
+  ${F("repId","Rep",`<select id="f_repId" name="repId" required>${repOpts()}</select>`)}
+  ${F("provider","Provider",inp("provider",s.provider,"text",'list="dlProv" required'))}
+  ${F("product","Product",inp("product",s.product,"text",'list="dlProd" required'))}
+  ${F("date","Sold on",inp("date",s.date||today(),"date","required"))}
+  ${F("status","Status",`<select id="f_status" name="status">${opts([["pending","Pending install / activation"],["done","Installed / activated"],["cancelled","Cancelled"]],s.status||"pending")}</select>`)}
+  ${F("installDate","Install / activation date",inp("installDate",s.installDate,"date"),"","Leave blank to use the sold date")}
+  ${F("qty","Lines / units",inp("qty",s.qty||1,"number",'inputmode="numeric" min="1" step="1"'))}
+  ${F("customer","Customer",inp("customer",s.customer,"text",'placeholder="Name or address"'),"full")}
+  ${F("repPay","Rep gets ($ each)",inp("repPay",s.repPay,"number",'step="0.01" min="0"'))}
+  ${F("override","Manager override ($ each)",inp("override",s.override,"number",'step="0.01" min="0"'))}
+  ${F("revenue","Value at your scale ($ each)",inp("revenue",s.revenue,"number",'step="0.01" min="0"'),"full","Filled from the pay plan. Edit for a one-off deal.")}
+  <div class="calc" id="calc"></div>
+  <div class="fld chk full"><input id="f_paid" name="paid" type="checkbox" ${s.paid?"checked":""}><label for="f_paid">Rep commission paid out</label></div>
+  ${F("notes","Notes",`<textarea id="f_notes" name="notes" rows="2">${esc(s.notes)}</textarea>`,"full")}
+  <datalist id="dlProv"></datalist><datalist id="dlProd"></datalist>`,
+  sel:s=>({repId:s.repId||(me()?me().id:(D.reps[0]||{}).id||"")}),num:["repPay","override","revenue","qty"],hook:saleHook},
+ expenses:{t:"Expense",body:e=>`${F("date","Date",inp("date",e.date||today(),"date","required"))}
+  ${F("category","Category",`<select id="f_category" name="category">${opts(EXP_CAT,e.category||"Travel")}</select>`)}
+  ${F("amount","Amount ($)",inp("amount",e.amount,"number",'inputmode="decimal" step="0.01" min="0" required'))}
+  ${F("repId","For",`<select id="f_repId" name="repId">${repOpts("Whole org")}</select>`)}
+  ${F("market","Market / trip",inp("market",e.market,"text"),"full")}
+  ${F("note","Note",inp("note",e.note,"text",'placeholder="Airbnb, rental car, flights…"'),"full")}
+  ${F("payday","Take out of payout (Friday)",inp("payday",e.payday,"date"),"full","Leave blank to use the first Friday on or after the expense date")}`,
+  sel:e=>({repId:e.repId||""}),num:["amount"]},
+ incentives:{t:"Incentive",body:i=>`${F("name","Name",inp("name",i.name,"text",'required placeholder="Fall install blitz"'),"full")}
+  ${F("start","Starts",inp("start",i.start||today(),"date","required"))}
+  ${F("end","Ends",inp("end",i.end||today(),"date","required"))}
+  ${F("metric","Counts",`<select id="f_metric" name="metric">${opts([["installs","Fiber installs"],["sales","Sales written"],["lines","Phone lines activated"]],i.metric||"installs")}</select>`)}
+  ${F("scope","Goal type",`<select id="f_scope" name="scope">${opts([["each","Each rep who hits it"],["team","Team total"]],i.scope||"each")}</select>`)}
+  ${F("target","Target",inp("target",i.target,"number",'min="1" step="1" required'))}
+  ${F("reward","Reward ($)",inp("reward",i.reward,"number",'step="0.01" min="0"'))}
+  ${F("repId","Who's in",`<select id="f_repId" name="repId">${repOpts("Everyone")}</select>`,"full","Pick a manager to limit it to their team")}
+  ${F("note","Details",inp("note",i.note,"text",'placeholder="Trip, cash, gear…"'),"full")}`,
+  sel:i=>({repId:i.repId||""}),num:["target","reward"]}
+};
+
+function findRate(type,prov,prod,repId){
+  const m=r=>(r.category||"fiber")===type&&String(r.provider).toLowerCase()===String(prov).toLowerCase()&&String(r.product).toLowerCase()===String(prod).toLowerCase();
+  return D.rates.find(r=>m(r)&&r.repId===repId)||D.rates.find(r=>m(r)&&!r.repId);
+}
+function saleHook(form,isNew){
+  const g=n=>form.elements[n];
+  const lists=()=>{const t=g("type").value;const pv=(t==="phone"?PHONE_PROV:FIBER_PROV).concat(D.rates.filter(r=>(r.category||"fiber")===t).map(r=>r.provider));
+    $("#dlProv").innerHTML=[...new Set(pv)].map(a=>`<option value="${esc(a)}">`).join("");
+    const pd=(t==="phone"?PHONE_PROD:FIBER_PROD).concat(D.rates.filter(r=>(r.category||"fiber")===t&&(!g("provider").value||r.provider===g("provider").value)).map(r=>r.product));
+    $("#dlProd").innerHTML=[...new Set(pd)].map(a=>`<option value="${esc(a)}">`).join("")};
+  const calc=()=>{const q=Math.max(1,num(g("qty").value)||1),p=num(g("repPay").value)*q,o=num(g("override").value)*q,r=num(g("revenue").value)*q;
+    $("#calc").innerHTML=`<div>Rep earns<b>${money(p)}</b></div><div>Override<b>${money(o)}</b></div><div>Quota gets<b>${money(r)}</b></div><div>Quota keeps<b>${money(r-p-o)}</b></div>`};
+  const fill=()=>{const rt=findRate(g("type").value,g("provider").value,g("product").value,g("repId").value);
+    if(rt){g("repPay").value=num(rt.repPay);g("override").value=num(rt.override);g("revenue").value=num(rt.revenue)}calc()};
+  ["type","provider","product","repId"].forEach(n=>g(n).addEventListener("change",()=>{lists();fill()}));
+  ["qty","repPay","override","revenue"].forEach(n=>g(n).addEventListener("input",calc));
+  g("status").addEventListener("change",()=>{if(g("status").value==="done"&&!g("installDate").value)g("installDate").value=today()});
+  lists();if(isNew)fill();else calc();
+}
+
+function openForm(col,id,preset){
+  if(!canEdit){toast("You have view access only");return}
+  const spec=FORMS[col],rec=id?(D[col].find(x=>x.id===id)||{}):(preset||{}),isNew=!id;
+  $("#sheetRoot").innerHTML=`<div class="sheet-back" id="sb"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh"><div class="sheet-h"><h2 id="sh">${isNew?"New":"Edit"} ${spec.t.toLowerCase()}</h2><button class="x" type="button" id="sx" aria-label="Close">×</button></div>
+  <form class="f" id="ff" novalidate>${spec.body(rec)}<div class="acts">${isNew?"":`<button type="button" class="btn btn-bad sp" id="del">Delete</button>`}<button type="button" class="btn btn-out" id="cancel">Cancel</button><button class="btn btn-lime" type="submit">${isNew?"Save":"Save changes"}</button></div></form></div></div>`;
+  const form=$("#ff");const sel=spec.sel?spec.sel(rec):{};for(const k in sel)if(form.elements[k])form.elements[k].value=sel[k];
+  if(spec.hook)spec.hook(form,isNew);
+  const back=repOpen;repOpen=null;
+  const k=e=>{if(e.key==="Escape")close()};
+  const close=()=>{document.removeEventListener("keydown",k);$("#sheetRoot").innerHTML="";if(back&&rep(back))openRep(back)};
+  $("#sx").onclick=close;$("#cancel").onclick=close;$("#sb").addEventListener("mousedown",e=>{if(e.target.id==="sb")close()});
+  document.addEventListener("keydown",k);
+  const first=form.querySelector("input:not([type=checkbox]),select");if(first)first.focus();
+  let armed=false;
+  if($("#del"))$("#del").onclick=async()=>{if(!armed){armed=true;$("#del").textContent="Tap again to delete";return}
+    try{await db.collection(col).doc(id).delete();close();toast("Deleted")}catch(e){toast(errMsg(e))}};
+  form.onsubmit=async e=>{e.preventDefault();
+    const bad=[...form.querySelectorAll("[required]")].find(x=>!String(x.value).trim());if(bad){bad.focus();toast("Fill in "+(form.querySelector(`label[for="${bad.id}"]`)||{}).textContent);return}
+    const data={};[...form.elements].forEach(el=>{if(!el.name)return;data[el.name]=el.type==="checkbox"?el.checked:el.value.trim()});
+    (spec.num||[]).forEach(k=>{if(k in data)data[k]=num(data[k])});
+    if(col==="reps"){if(data.managerId===id)data.managerId="";if(id&&data.managerId&&downline(id).includes(data.managerId)){toast("That would put them under their own team");return}}
+    if(col==="incentives"&&data.end<data.start){toast("End date is before the start");return}
+    data.updatedAt=new Date().toISOString();
+    try{
+      if(col==="reps"&&data.me){for(const r of D.reps)if(r.me&&r.id!==id)await db.collection("reps").doc(r.id).update({me:false})}
+      if(isNew){data.createdAt=data.updatedAt;await db.collection(col).add(data)}else{const body=Object.assign({},rec,data);delete body.id;await db.collection(col).doc(id).set(body)}
+      close();toast(isNew?"Saved":"Updated");
+    }catch(err){toast(errMsg(err))}
+  };
+}
+function errMsg(e){const c=e&&e.code;if(c==="invalid_argument")return"Couldn't save. You may not have edit access.";if(c==="quota_exceeded")return"Storage is full. Delete old entries to add more.";return"Couldn't save. Try again."}
+let tt;function toast(m){clearTimeout(tt);let el=$(".toast");if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=m;tt=setTimeout(()=>el.remove(),2400)}
+
+/* ---------- events ---------- */
+document.addEventListener("click",e=>{
+  const cb=e.target.closest("[data-sel],[data-selall]");
+  if(cb){if(cb.hasAttribute("data-selall")){if(cb.checked)salesList(range()).forEach(s=>selS.add(s.id));else selS.clear()}else{cb.checked?selS.add(cb.dataset.sel):selS.delete(cb.dataset.sel)}render();return}
+  if(!e.target.closest(".search"))$("#gres").hidden=true;
+  const pvb=e.target.closest("[data-pv],[data-pvexit]");if(pvb&&pvb.tagName==="BUTTON"){if(pvb.dataset.pvexit){previewRep=null;tab="mine"}else{previewRep=pvb.dataset.pv;tab="r_home"}window.scrollTo(0,0);render();return}
+  const lbb=e.target.closest("[data-lb]");if(lbb){ST.m.lb=lbb.dataset.lb;render();return}
+  const rs=e.target.closest("[data-rstmt]");if(rs){repStmt(rs.dataset.rstmt);return}
+  const qh=e.target.closest("[data-logout],[data-logtoggle],[data-invite],[data-revoke],[data-copy],[data-recruit],[data-share],[data-appr],[data-decl]");
+  if(qh&&window.QHQ){const Q=window.QHQ;
+    if(qh.dataset.logout)Q.logout();
+    else if(qh.dataset.logtoggle){LOGOPEN=!LOGOPEN;if(LOGOPEN)Q.loadUsers().then(render);else render()}
+    else if(qh.dataset.invite){const r=rep(qh.dataset.invite);Q.invite(r.id,r.email).then(x=>{LINKS[r.id]=x.link;return Q.loadUsers()}).then(render).catch(err=>toast(err.message))}
+    else if(qh.dataset.revoke){Q.revoke(qh.dataset.revoke).then(()=>Q.loadUsers()).then(()=>{toast("Login removed");render()}).catch(err=>toast(err.message))}
+    else if(qh.dataset.recruit){Q.recruitLink().then(x=>{RLINK=x.link;render()}).catch(err=>toast(err.message))}
+    else if(qh.dataset.share){navigator.share({title:"Join my team at Quota",url:qh.dataset.share}).catch(()=>{})}
+    else if(qh.dataset.appr){const a=(Q.applicants||[]).find(x=>String(x.id)===qh.dataset.appr),sc=num(($("#asc-"+qh.dataset.appr)||{}).value);if(!sc){toast("Set a pay scale first");return}Q.approve(qh.dataset.appr,sc).then(x=>{ALINKS[a?a.name.split(" ")[0]:"them"]=x.link;toast((a?a.name:"Rep")+" added");render()}).catch(err=>toast(err.message))}
+    else if(qh.dataset.decl){Q.decline(qh.dataset.decl).then(()=>{toast("Declined");render()}).catch(err=>toast(err.message))}
+    else if(qh.dataset.copy){try{navigator.clipboard.writeText(qh.dataset.copy);toast("Link copied")}catch(err){toast("Select the link and copy it")}}
+    return}
+  const cl=e.target.closest("[data-claim],[data-approve],[data-deny]");
+  if(cl){if(cl.dataset.claim){const v=$("#lpick")&&$("#lpick").value;if(!v){toast("Pick your name first");return}
+      db.collection("claims").doc(myUid).set({repId:v,who:myName||"",email:myEmail||"",at:new Date().toISOString()}).then(()=>{toast("Request sent to Aidan");CLAIMS=[{id:myUid,repId:v}];render()}).catch(()=>toast("Couldn't send. Try again."))}
+    else if(cl.dataset.approve){const c=CLAIMS.find(x=>x.id===cl.dataset.approve);if(!c)return;db.collection("reps").doc(c.repId).update({userId:c.id}).then(()=>db.collection("claims").doc(c.id).delete()).then(()=>toast(repName(c.repId)+" can now see their pay")).catch(()=>toast("Couldn't approve"))}
+    else{db.collection("claims").doc(cl.dataset.deny).delete().catch(()=>toast("Couldn't dismiss"))}return}
+  const t=e.target.closest("[data-paygoal],[data-stmt],[data-addexp],[data-savegoals],[data-pw],[data-tab],[data-add],[data-edit],[data-rep],[data-editrep],[data-logfor],[data-close],[data-sort],[data-view],[data-bulk],[data-payout]");if(!t)return;
+  const d=t.dataset;if(t.closest("#gres")){$("#gres").hidden=true;$("#gsearch").value=""}
+  if(d.paygoal){savePayGoal(d.paygoal)}
+  else if(d.stmt){saveStmt(d.stmt)}
+  else if(d.addexp){openForm("expenses",null,{payday:d.addexp,date:today(),category:"Travel"})}
+  else if(t.hasAttribute("data-savegoals")){saveGoals()}
+  else if(t.hasAttribute("data-pw")){payWk=d.pw;render()}
+  else if(d.tab){tab=d.tab;try{history.replaceState(null,"","#"+tab)}catch(_){}selS.clear();render();window.scrollTo(0,0)}
+  else if(d.add)openForm(d.add);
+  else if(d.edit)d.edit==="reps"?openRep(d.id):openForm(d.edit,d.id);
+  else if(d.rep)openRep(d.rep);
+  else if(d.editrep)openForm("reps",d.editrep);
+  else if(d.logfor)openForm("sales",null,{repId:d.logfor});
+  else if(t.hasAttribute("data-close"))closeSheet();
+  else if(d.sort){const [o,k]=d.sort.split(".");const S=ST[o];if(S.sort===k)S.dir=S.dir==="asc"?"desc":"asc";else{S.sort=k;S.dir=["date","installed","pw","inst","pend","sold","qty","pay","rev","comm","ovr","owed","rate"].includes(k)?"desc":"asc"}render()}
+  else if(d.view){const [o,v]=d.view.split(".");ST[o].view=v;render()}
+  else if(d.bulk)bulk(d.bulk);
+  else if(d.payout){if(d.armed){payout(d.payout)}else{d.armed="1";t.textContent="Confirm";setTimeout(()=>{if(t.isConnected){delete t.dataset.armed;t.textContent="Mark paid"}},4000)}}
+});
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.f;if(!k)return;if(k==="pv"){previewRep=e.target.value;render();return}if(k==="lp"){linkPick=e.target.value;return}const [o,f]=k.split(".");ST[o][f]=e.target.value;render()});
+document.addEventListener("keydown",e=>{if(e.key!=="Escape")return;if(!$("#gres").hidden){$("#gres").hidden=true;return}if(repOpen)closeSheet()});
+document.addEventListener("dragstart",e=>{const c=e.target.closest&&e.target.closest(".dc");if(!c)return;e.dataTransfer.setData("text/plain",c.dataset.id);e.dataTransfer.effectAllowed="move";c.classList.add("drag")});
+document.addEventListener("dragend",()=>document.querySelectorAll(".drag,.over").forEach(x=>x.classList.remove("drag","over")));
+document.addEventListener("dragover",e=>{const col=e.target.closest&&e.target.closest(".col");if(!col)return;e.preventDefault();document.querySelectorAll(".col.over").forEach(x=>x!==col&&x.classList.remove("over"));col.classList.add("over")});
+document.addEventListener("drop",async e=>{const col=e.target.closest&&e.target.closest(".col");if(!col)return;e.preventDefault();col.classList.remove("over");
+  const id=e.dataTransfer.getData("text/plain"),s=D.sales.find(x=>x.id===id),st=col.dataset.col;if(!s||s.status===st)return;
+  const u={status:st};if(st==="done"&&!s.installDate)u.installDate=today();
+  try{await db.collection("sales").doc(id).update(u);toast(st==="done"?"Marked installed":st==="cancelled"?"Marked cancelled":"Moved to pending")}catch(err){toast(errMsg(err))}});
+const gs=$("#gsearch"),gr=$("#gres");
+gs.addEventListener("input",()=>{const q=gs.value.trim().toLowerCase();if(!q){gr.hidden=true;return}
+  const hit=(...f)=>f.some(x=>String(x||"").toLowerCase().includes(q));
+  const rs=D.reps.filter(r=>hit(r.name,r.market,r.phone,r.role)).slice(0,5),ss=D.sales.filter(s=>hit(s.customer,s.provider,s.product,s.notes)).slice(0,8),es=D.expenses.filter(x=>hit(x.note,x.market,x.category)).slice(0,4),is=D.incentives.filter(x=>hit(x.name,x.note)).slice(0,3);
+  const g=(t,a,f)=>a.length?`<div class="grp">${t}</div>`+a.map(f).join(""):"";
+  gr.innerHTML=(g("Reps",rs,r=>`<button type="button" data-rep="${r.id}"><span class="av">${esc(initials(r.name))}</span>${esc(r.name)}<small>${esc(r.role||"Rep")}</small></button>`)+
+    g("Sales",ss,s=>`<button type="button" data-edit="sales" data-id="${s.id}">${esc(s.customer)||esc(s.product)}<small>${esc(s.provider)} · ${esc(repName(s.repId))} · ${fmtD(s.date)}</small></button>`)+
+    g("Expenses",es,x=>`<button type="button" data-edit="expenses" data-id="${x.id}">${esc(x.note)||esc(x.category)}<small>${money(num(x.amount))} · ${fmtD(x.date)}</small></button>`)+
+    g("Incentives",is,x=>`<button type="button" data-edit="incentives" data-id="${x.id}">${esc(x.name)}<small>Ends ${fmtD(x.end)}</small></button>`))||`<p class="sub" style="padding:10px;margin:0">No matches for "${esc(gs.value)}"</p>`;
+  gr.hidden=false});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-edit][role=button]")){e.preventDefault();e.target.click()}});
+$("#period").addEventListener("change",render);
+$("#quickSale").addEventListener("click",()=>openForm(D.reps.length?"sales":"reps"));
+
+/* ---------- data ---------- */
+renderTabs();
+(async()=>{
+  try{db=await window.claude.use("db")}catch(e){db=null}
+  try{const u=await window.claude.use("user");if(u){canEdit=!!(await u.canEdit());const mi=await u.me();myUid=mi.id;myName=mi.name||"";myEmail=mi.email?mi.email.trim().toLowerCase():null}}catch(e){}
+  if(!db){$("#view").innerHTML=`<div class="card empty"><b>Tracker data isn't available here</b>Open this page in claude.ai while signed in to your organization to see and log sales.</div>`;return}
+  const RAW={};const hydrate=()=>{if(window.QHQ&&window.QHQ.pre){D.sales=(RAW.sales||[]).slice();return}const RP=D.reps||[],QS={},byId={};RP.forEach(r=>{byId[r.id]=r;if(r.quotaStart)QS[r.id]=r.quotaStart});
+  const top=RP.find(r=>r.me),topSc=top&&num(top.scale)?num(top.scale):300;
+  const sc=(r,d)=>{if(!r)return null;if(num(r.scale2)&&r.scale2From&&d>=r.scale2From)return num(r.scale2);return num(r.scale)?num(r.scale):null};
+  D.sales=(RAW.sales||[]).map(s=>{const q=QS[s.repId];if(q&&(s.date||"")<q)return null;
+    const rt=findRate(s.type||"fiber",s.provider,s.product,s.repId),rev=(s.revenue!==undefined&&s.revenue!==null&&s.revenue!=="")?num(s.revenue):(rt?num(rt.revenue):0);
+    const d=(s.status==="done"&&(s.installDate||s.date))||s.date||"",delta=rev-topSc,chain=[],seen=new Set();let r=byId[s.repId];
+    while(r&&!seen.has(r.id)){seen.add(r.id);chain.push(r);r=byId[r.managerId]}
+    const ss=sc(chain[0],d),ovr={};let rp=0;
+    if(ss!=null){rp=Math.max(0,ss+delta);let prev=ss;for(let i=1;i<chain.length;i++){const a=sc(chain[i],d);if(a==null)break;if(a-prev>0)ovr[chain[i].id]=a-prev;prev=a}}
+    return Object.assign({},s,{revenue:rev,repPay:rp,ovr,scaleKnown:ss!=null})}).filter(Boolean)};
+  if(canEdit)db.collection("claims").onSnapshot(sn=>{CLAIMS=sn.docs.map(d=>Object.assign({},d.data(),{id:d.id}));if(loaded>=COLS.length)render()},()=>{});
+  try{if(!canEdit&&myUid)db.doc("data/users/"+myUid+"/prefs").get().then(d=>{if(d&&d.exists){MYGOAL=num((d.data()||{}).payGoal);if(loaded>=COLS.length)render()}}).catch(()=>{});}catch(e){}
+  if(!canEdit&&myUid)db.collection("claims").doc(myUid).get().then(d=>{if(d&&d.exists){CLAIMS=[Object.assign({},d.data(),{id:myUid})];if(loaded>=COLS.length)render()}}).catch(()=>{});
+  COLS.forEach(c=>{let first=true;db.collection(c).onSnapshot(snap=>{RAW[c]=snap.docs.map(d=>Object.assign({},d.data(),{id:d.id}));D[c]=RAW[c];if(c==="sales"||c==="rates"||c==="reps")hydrate();if(first){first=false;loaded++}if(loaded>=COLS.length)render()},err=>{toast("Lost connection to "+c)})});
+})();
+})();
+</script>
+
+</body></html>
