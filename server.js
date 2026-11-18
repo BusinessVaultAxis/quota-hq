@@ -11,7 +11,8 @@ const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const SECURE = BASE_URL.startsWith("https");
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.PGSSL === "1" ? { rejectUnauthorized: false } : undefined });
-const COLS = ["reps", "rates", "sales", "expenses", "incentives", "goals"];
+const COLS = ["reps", "rates", "sales", "expenses", "incentives", "goals", "reviews"];
+const EXP_CATS = ["Flights", "Housing", "Hotel", "Rental car", "Gas", "Food", "Tickets & events", "Supplies", "Other"];
 
 /* ---------- db ---------- */
 async function init() {
@@ -85,6 +86,7 @@ async function dataFor(u) {
   const pr = (await pool.query(`select data from prefs where user_id=$1`, [u.id])).rows[0];
   if (u.role === "admin") { const rg = {}; (await pool.query(`select u.rep_id,p.data from prefs p join users u on u.id=p.user_id where u.rep_id is not null and u.role='rep'`)).rows.forEach(r => { rg[r.rep_id] = r.data }); D._repGoals = rg }
   if (u.role === "admin") return Object.assign(D, { _me: { id: "u" + u.id, email: u.email, role: "admin", prefs: pr ? pr.data : {} } });
+  if (u.role === "manager") return Object.assign(D, { _repGoals: null, _me: { id: "u" + u.id, email: u.email, role: "manager", prefs: {} } });
   // rep: only what a rep should see
   const me = u.rep_id, sales = hydrate(D), now = new Date(), ms = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   const kids = {}; D.reps.forEach(r => { (kids[r.managerId] = kids[r.managerId] || []).push(r.id) });
@@ -170,6 +172,25 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { link: `${BASE_URL}/join/${rows[0].code}` });
     }
 
+    // manager: read everything, add expenses and mark payouts reviewed
+    if (u.role === "manager") {
+      const mm = p.match(/^\/api\/doc\/(expenses|reviews)(?:\/([^/]+))?$/);
+      if (!mm) return send(res, 403, { error: "Managers can add expenses and review payouts only." });
+      const col = mm[1], id = mm[2] ? decodeURIComponent(mm[2]) : crypto.randomBytes(10).toString("hex"); if (!validId(id)) return send(res, 400, { error: "bad id" });
+      const cur = (await pool.query(`select data from docs where col=$1 and id=$2`, [col, id])).rows[0];
+      if (col === "expenses" && cur && cur.data.byUser !== u.id) return send(res, 403, { error: "You can only change expenses you added." });
+      if (m === "DELETE") { await pool.query(`delete from docs where col=$1 and id=$2`, [col, id]); return send(res, 200, { ok: true }) }
+      const b = await body(req); delete b.id;
+      if (col === "expenses") {
+        if (!EXP_CATS.includes(b.category)) return send(res, 400, { error: "Pick a category." });
+        if (!(num(b.amount) > 0)) return send(res, 400, { error: "Add the amount." });
+        if (String(b.note || "").trim().length < 3) return send(res, 400, { error: "Say what the expense was for." });
+        Object.assign(b, { byUser: u.id, by: u.email });
+      } else Object.assign(b, { by: u.email, at: new Date().toISOString() });
+      const data = m === "PATCH" && cur ? Object.assign({}, cur.data, b) : b;
+      await pool.query(`insert into docs(col,id,data) values($1,$2,$3) on conflict(col,id) do update set data=$3,updated=now()`, [col, id, JSON.stringify(data)]);
+      return send(res, 200, { ok: true, id });
+    }
     if (u.role !== "admin") return send(res, 403, { error: "Admins only." });
     if (m === "GET" && p === "/api/applicants") { const { rows } = await pool.query(`select a.*,d.data->>'name' as recruiter_name from applicants a left join docs d on d.col='reps' and d.id=a.recruiter where a.status='pending' order by a.created`); return send(res, 200, rows) }
     const am = p.match(/^\/api\/applicants\/(\d+)(\/approve)?$/);
@@ -203,6 +224,14 @@ const server = http.createServer(async (req, res) => {
     if (m === "GET" && p === "/api/users") { const { rows } = await pool.query(`select id,email,role,rep_id,pw is not null as active,invite_exp,last_login from users order by id`); return send(res, 200, rows) }
     if (m === "POST" && p === "/api/users/invite") {
       const b = await body(req), email = String(b.email || "").trim().toLowerCase(), repId = String(b.repId || "");
+      if (b.role === "manager") {
+        if (!/^\S+@\S+\.\S+$/.test(email)) return send(res, 400, { error: "Enter your manager's email." });
+        const t = token(), ex = await pool.query(`select id,role from users where email=$1`, [email]);
+        if (ex.rows[0] && ex.rows[0].role === "admin") return send(res, 400, { error: "That's your admin email." });
+        if (ex.rows[0]) await pool.query(`update users set role='manager',rep_id=null,invite=$1,invite_exp=now()+interval '7 days' where id=$2`, [t, ex.rows[0].id]);
+        else await pool.query(`insert into users(email,role,invite,invite_exp) values($1,'manager',$2,now()+interval '7 days')`, [email, t]);
+        return send(res, 200, { link: `${BASE_URL}/invite/${t}` });
+      }
       if (!/^\S+@\S+\.\S+$/.test(email)) return send(res, 400, { error: "Add a valid email to this rep first." });
       const t = token(), ex = await pool.query(`select id,role from users where email=$1 or (rep_id=$2 and role='rep')`, [email, repId]);
       if (ex.rows[0]) await pool.query(`update users set email=$1,rep_id=case when role='admin' then rep_id else $2 end,invite=$3,invite_exp=now()+interval '7 days' where id=$4`, [email, repId, t, ex.rows[0].id]);
