@@ -28,6 +28,17 @@ async function init() {
     for (const c of Object.keys(S)) for (const id of Object.keys(S[c])) { await pool.query(`insert into docs(col,id,data) values($1,$2,$3) on conflict do nothing`, [c, id, JSON.stringify(S[c][id])]); n++ }
     console.log(`Seeded ${n} records`);
   }
+  await pool.query(`create table if not exists applied_syncs(name text primary key, at timestamptz default now())`);
+  const syncDir = path.join(__dirname, "data", "sync");
+  if (fs.existsSync(syncDir)) for (const f of fs.readdirSync(syncDir).filter(f => f.endsWith(".json")).sort()) {
+    if ((await pool.query(`select 1 from applied_syncs where name=$1`, [f])).rows[0]) continue;
+    const ops = JSON.parse(fs.readFileSync(path.join(syncDir, f), "utf8")); let n = 0;
+    for (const o of ops) {
+      if (o.set) { await pool.query(`insert into docs(col,id,data) values($1,$2,$3) on conflict(col,id) do nothing`, [o.col, o.id, JSON.stringify(o.set)]); n++ }
+      else if (o.patch) { const r = await pool.query(`update docs set data=data||$3,updated=now() where col=$1 and id=$2`, [o.col, o.id, JSON.stringify(o.patch)]); n += r.rowCount }
+    }
+    await pool.query(`insert into applied_syncs(name) values($1)`, [f]); console.log(`Applied ${f}: ${n} changes`);
+  }
   if (ADMIN_EMAIL) {
     const { rows } = await pool.query(`select id,pw,invite,invite_exp>now() as live from users where role='admin'`);
     if (rows[0] && !rows[0].pw && rows[0].invite && rows[0].live) console.log(`ADMIN SETUP LINK: ${BASE_URL}/invite/${rows[0].invite}`);
