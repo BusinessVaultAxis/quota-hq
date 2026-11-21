@@ -217,6 +217,21 @@ form.f{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
   .bar{position:sticky;top:0;z-index:40;background:var(--bg)}
   .acct-m{position:fixed;right:12px;top:64px}
 }
+html,body{margin:0}
+.panel.paymini{display:flex;flex-direction:row;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;font:inherit;cursor:pointer;background:#0F1210;color:#fff;border:1px solid var(--line)}.panel.paymini:hover{border-color:var(--lime)}
+.paymini .pm-l{display:flex;flex-direction:column;gap:2px;min-width:0}.paymini small{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#A8B0A6}.paymini b{font-family:var(--display);font-size:34px;line-height:1.1;color:var(--lime)}.paymini em{font-style:normal;font-size:13px;color:#C9CFC6}
+.paymini .pm-r{display:flex;align-items:center;gap:2px;font-size:13px;font-weight:700;color:var(--lime);white-space:nowrap}.paymini svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2}
+.sc-hero{border:1px solid var(--line)}
+.more-sheet{position:fixed;left:0;right:0;bottom:0;z-index:70;background:var(--card);border-radius:18px 18px 0 0;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));box-shadow:0 -10px 30px rgba(0,0,0,.25)}.more-sheet h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 4px}.more-sheet .ms-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.more-sheet button{min-height:64px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer}.more-sheet button[aria-current="page"]{border-color:var(--green)}.more-bg{position:fixed;inset:0;z-index:65;background:rgba(0,0,0,.35)}
+@media (max-width:900px){
+  .stack{display:contents}.paymini{order:1}.ghero{order:2}.daily{order:3}.stack>.panel{grid-column:1/-1;width:auto}
+  #view{gap:12px}
+  .bar{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;border-bottom:1px solid var(--line)}
+  #view{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .panel{padding:16px;border-radius:16px}
+  .side .tabs button.more-only{display:flex}.side .tabs button.m-hide{display:none}
+}
+.side .tabs .more-only{display:none}
 .m-wk{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .pvbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--lime);color:var(--ink);border-radius:12px;padding:10px 14px}.pvbar span{font-size:14px;margin-right:auto}.pvbar select{min-height:36px;border-radius:8px;border:1px solid var(--ink);background:#fff;padding:0 8px}.pvbar .btn-lime{background:var(--ink);color:var(--lime)}
 .nav-g{margin:14px 12px 4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6E766C}.nav-g:first-child{margin-top:0}
@@ -469,7 +484,11 @@ function totals(R){
 const ICO={r_home:"M3 11l9-7 9 7v9H3zM9 20v-6h6v6",r_pay:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",r_pipe:"M3 5h18l-7 8v6l-4 2v-8z",r_board:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z",r_goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",r_team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",dash:"M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",sales:"M4 4v16h16M8 15l4-4 3 3 5-6",team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",mine:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6",goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",payout:"M4 5h16v15H4zM4 10h16M8 3v4M16 3v4",comm:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",pay:"M12 3v18M17 7H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H6",exp:"M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",inc:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"};
 const THK="qhq-theme";function applyTheme(v){v=v||"auto";if(v==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",v);document.querySelectorAll("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.themeSet===v)))}
 let THEME="auto";try{THEME=localStorage.getItem(THK)||"auto"}catch(e){}applyTheme(THEME);
-function renderTabs(){$("#tabs").innerHTML=TABS.map(([k,l])=>(!RV()&&NAVG[k]?`<p class="nav-g" role="presentation">${NAVG[k]}</p>`:"")+`<button role="tab" type="button" data-tab="${k}" aria-selected="${k===tab}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICO[k]}"/></svg><span>${l}</span></button>`).join("")}
+const MPRI=["dash","sales","payout","team"],MORE_ICO="M5 12h.01M12 12h.01M19 12h.01";
+function renderTabs(){const many=TABS.length>6,inMore=many&&!MPRI.includes(tab);
+  $("#tabs").innerHTML=TABS.map(([k,l])=>(!RV()&&NAVG[k]?`<p class="nav-g" role="presentation">${NAVG[k]}</p>`:"")+`<button role="tab" type="button" class="${many&&!MPRI.includes(k)?"m-hide":""}" data-tab="${k}" aria-selected="${k===tab}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICO[k]}"/></svg><span>${l}</span></button>`).join("")+(many?`<button type="button" class="more-only" data-more="1" aria-selected="${inMore}" aria-label="More sections"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${MORE_ICO}" stroke-width="3"/></svg><span>${inMore?(TABS.find(t=>t[0]===tab)||[])[1]:"More"}</span></button>`:"")}
+function openMore(){closeMore();const L=TABS.filter(t=>!MPRI.includes(t[0]));document.body.insertAdjacentHTML("beforeend",`<div class="more-bg" data-moreclose="1"></div><div class="more-sheet" role="dialog" aria-label="More sections"><h3>More</h3><div class="ms-grid">${L.map(([k,l])=>`<button type="button" data-tab="${k}" data-moreclose="1" ${k===tab?'aria-current="page"':""}>${l}</button>`).join("")}</div></div>`)}
+function closeMore(){document.querySelectorAll(".more-bg,.more-sheet").forEach(x=>x.remove())}
 function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").contains(ae)?ae.id:null;let pos=null;try{pos=ae.selectionStart}catch(e){}
   if(isMgr()){TABS=ALLTABS.filter(t=>t[0]!=="mine");if(!window.__mgrInit){window.__mgrInit=1;tab="payout"}if(tab==="mine"||tab.startsWith("r_"))tab="payout"}
   if(!canEdit&&!isMgr()){const r=D.reps.find(x=>(myUid&&x.userId===myUid)||(myEmail&&x.email&&x.email.trim().toLowerCase()===myEmail));repMode=r?r.id:null;ST.m.id=repMode;
@@ -1047,7 +1066,8 @@ function vMine(){
     ${gv&&leftA?`<div class="todo"><b>${wkMore} sale${wkMore>1?"s":""} this week keeps your goal on track</b><span>${money(leftA)} left to sell · ${daysLeft} days left</span></div>`:!gv?`<div class="todo"><b>Set your ${monthName(T)} income goal</b><span>We'll turn it into the sales it takes each week.</span></div>`:""}
     ${sp.map(x=>`<div class="todo"><b>${esc(x.i.name)}: ${Math.max(0,x.tg-x.v)} to go</b><span>${money(num(x.i.reward))} · ends ${fmtD(x.i.end)}</span></div>`).join("")}
     ${!lateL.length&&!soon.length&&!sp.length&&gv&&!leftA?`<p class="sub" style="margin:0">All caught up.</p>`:""}</div>`;
-  const stack=`<div class="s5 stack">${B.hero.replace('panel s5 ','panel ')}${B.daily.replace('panel s5 ','panel ')}</div>`;
+  B.payMini=`<button type="button" class="panel paymini" data-tab="r_pay" ${n1?`data-rpk="${n1.k}"`:""} aria-label="Open pay statement"><span class="pm-l"><small>Next payday${n1?" · Fri "+fmtD(n1.k):""}</small><b>${money(n1?n1.own+n1.ov:0)}</b><em>${n2?`Then ${money(n2.own+n2.ov)} Fri ${fmtD(n2.k)}`:"Nothing else scheduled yet"}${pendPay?` · ${money(pendPay)} pending`:""}</em></span><span class="pm-r">Statement <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></button>`;
+  const stack=`<div class="s5 stack">${B.payMini}${B.daily.replace('panel s5 ','panel ')}</div>`;
   const pkSel=ST.rpk&&PD[ST.rpk]?ST.rpk:(n1?n1.k:(pds[0]||{}).k),pItems=pkSel?both.filter(s=>s.status==="done"&&doneDate(s)&&ymd(payDate(s))===pkSel).sort((a,b)=>doneDate(a).localeCompare(doneDate(b))):[];
   const pOwn=pItems.filter(s=>s.repId===id),pOv=pItems.filter(s=>s.repId!==id),sumP=l=>l.reduce((a,s)=>a+myPay(s),0),pP=PD[pkSel]||{own:0,ov:0};
   const stRow=(s,ov)=>`<div class="st-row"><div><b>${ov?esc((repName(s.repId)||"").split(" ")[0])+" · ":""}${esc(s.customer)||"—"}</b><span>${esc(s.provider)} ${esc(s.product)} · sold ${fmtD(s.date)} · installed ${fmtD(doneDate(s))}</span></div><b>${money(myPay(s))}</b></div>`;
@@ -1307,6 +1327,8 @@ document.addEventListener("click",e=>{
     else{const t="pay",v=gb.dataset.gset==="custom"?num(($("#gcustom")||{}).value):num(gb.dataset.gset);if(!v){toast("Enter a number");return}
       if(previewRep){toast("Preview only. Reps set their own goal.");return}saveGoal(id,t,v)}
     return}
+  if(e.target.closest("[data-more]")){openMore();return}
+  if(e.target.closest("[data-moreclose]"))closeMore();
   const ab=e.target.closest("#acctBtn");if(ab){const m=$("#acctMenu");m.hidden=!m.hidden;ab.setAttribute("aria-expanded",String(!m.hidden));return}
   if(!e.target.closest(".acct")&&$("#acctMenu"))$("#acctMenu").hidden=true;
   const thb=e.target.closest("[data-theme-set]");if(thb){THEME=thb.dataset.themeSet;try{localStorage.setItem(THK,THEME)}catch(err){}applyTheme(THEME);return}
