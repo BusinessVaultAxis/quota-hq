@@ -194,6 +194,29 @@ form.f{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .dots{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:14px}.dot{display:flex;flex-direction:column;align-items:center;gap:4px}.dot i{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:14px;background:var(--bg);border:2px solid var(--line)}.dot span{font-size:11px;color:var(--muted)}
 .dot.hit i{background:var(--green);border-color:var(--green);color:#fff}.dot.miss i{color:var(--bad);border-color:#f2c4bd}.dot.now i{border-color:var(--lime);border-width:3px}.dot.fut i{opacity:.5}
 .stack{display:flex;flex-direction:column;gap:var(--gap,16px)}.stack>.panel{margin:0}
+.s4{grid-column:span 4}.s8{grid-column:span 8}
+.pd-list{display:flex;flex-direction:column;gap:6px;max-height:640px;overflow:auto}.pd-item{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;background:var(--bg);border:1px solid transparent;border-radius:12px;padding:10px 12px;font:inherit;color:var(--text);cursor:pointer;min-height:56px}.pd-item:hover{border-color:var(--line-2)}.pd-item.on{border-color:var(--green);background:var(--tint)}.pd-item span{display:flex;flex-direction:column}.pd-item span:last-child{align-items:flex-end}.pd-item small{font-size:12px;color:var(--muted)}.pd-item small.ok{color:var(--green)}
+.st-tot{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:4px 0 16px}.st-tot div{background:var(--bg);border-radius:12px;padding:12px 14px}.st-tot span{display:block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}.st-tot b{display:block;font-family:var(--display);font-size:28px;margin:2px 0}.st-tot small{font-size:12px;color:var(--muted)}.st-tot .hl{background:var(--ink,#0F1210);color:#fff}.st-tot .hl b{color:var(--lime)}.st-tot .hl span,.st-tot .hl small{color:#A8B0A6}
+.st-list{border:1px solid var(--line);border-radius:12px;overflow:hidden}.st-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line)}.st-row:first-child{border-top:0}.st-row div{min-width:0}.st-row div b{display:block;font-size:14px}.st-row div span{font-size:12.5px;color:var(--muted)}.st-row>b{font-variant-numeric:tabular-nums;white-space:nowrap}.st-sum{background:var(--bg)}
+.tbl{-webkit-overflow-scrolling:touch}
+@media (max-width:560px){.tbl table{font-size:13px}.tbl th,.tbl td{padding-left:8px;padding-right:8px}}
+.stmt h4{font-size:14px;margin:14px 0 6px;letter-spacing:.02em}
+@media (max-width:900px){.s4,.s8{grid-column:1/-1}.pd-list{flex-direction:row;overflow-x:auto;max-height:none;padding-bottom:4px}.pd-item{min-width:190px}}
+.acct{position:relative;flex:none}.acct-b{width:40px;height:40px;border-radius:50%;border:0;background:var(--ink,#0F1210);color:var(--lime);font-weight:700;font-family:var(--display);cursor:pointer}
+.acct-m{position:absolute;right:0;top:48px;z-index:60;width:248px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:14px}
+.acct-who b{display:block}.acct-who span{font-size:13px;color:var(--muted)}.acct-l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:14px 0 6px}
+.acct-seg{display:flex}.acct-seg button{flex:1}.acct-out{display:block;width:100%;margin-top:14px;min-height:40px;border-radius:10px;border:1px solid var(--line-2);background:none;color:var(--text);font:inherit;cursor:pointer}
+@media (max-width:900px){
+  body{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))}
+  .side{position:fixed!important;top:auto!important;bottom:0;left:0;right:0;height:auto!important;padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px))!important;border-top:1px solid #222822;z-index:50}
+  .side .brand{display:none!important}
+  .side .tabs{justify-content:space-around;gap:2px;scrollbar-width:none}.side .tabs::-webkit-scrollbar{display:none}
+  .side .tabs button{flex-direction:column;gap:2px;min-height:56px;min-width:58px;padding:6px 6px!important;font-size:10.5px;justify-content:center;text-align:center}
+  .side .tabs button span{display:block!important;white-space:nowrap}
+  .side .tabs button svg{width:20px;height:20px}
+  .bar{position:sticky;top:0;z-index:40;background:var(--bg)}
+  .acct-m{position:fixed;right:12px;top:64px}
+}
 .m-wk{display:block;font-size:12px;color:var(--muted);margin-top:2px}
 .pvbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--lime);color:var(--ink);border-radius:12px;padding:10px 14px}.pvbar span{font-size:14px;margin-right:auto}.pvbar select{min-height:36px;border-radius:8px;border:1px solid var(--ink);background:#fff;padding:0 8px}.pvbar .btn-lime{background:var(--ink);color:var(--lime)}
 .nav-g{margin:14px 12px 4px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6E766C}.nav-g:first-child{margin-top:0}
@@ -351,6 +374,10 @@ th[aria-sort="ascending"]::after{content:" ▴"}th[aria-sort="descending"]::afte
       <option value="ytd">This year</option>
       <option value="all">All time</option>
     </select>
+    <div class="acct"><button type="button" id="acctBtn" class="acct-b" aria-haspopup="true" aria-expanded="false" aria-label="Account and display settings"><span id="acctAv">Q</span></button>
+      <div class="acct-m" id="acctMenu" hidden><div class="acct-who" id="acctWho"></div>
+        <p class="acct-l">Appearance</p><div class="seg acct-seg" role="group" aria-label="Appearance"><button type="button" data-theme-set="auto">Auto</button><button type="button" data-theme-set="light">Light</button><button type="button" data-theme-set="dark">Dark</button></div>
+        <button type="button" class="acct-out" data-logout="1" id="acctOut" hidden>Sign out</button></div></div>
 
   </header>
   <main id="view" aria-live="polite">
@@ -440,6 +467,8 @@ function totals(R){
 
 /* ---------- views ---------- */
 const ICO={r_home:"M3 11l9-7 9 7v9H3zM9 20v-6h6v6",r_pay:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",r_pipe:"M3 5h18l-7 8v6l-4 2v-8z",r_board:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z",r_goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",r_team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",dash:"M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",sales:"M4 4v16h16M8 15l4-4 3 3 5-6",team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",mine:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6",goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",payout:"M4 5h16v15H4zM4 10h16M8 3v4M16 3v4",comm:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",pay:"M12 3v18M17 7H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H6",exp:"M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",inc:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"};
+const THK="qhq-theme";function applyTheme(v){v=v||"auto";if(v==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",v);document.querySelectorAll("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.themeSet===v)))}
+let THEME="auto";try{THEME=localStorage.getItem(THK)||"auto"}catch(e){}applyTheme(THEME);
 function renderTabs(){$("#tabs").innerHTML=TABS.map(([k,l])=>(!RV()&&NAVG[k]?`<p class="nav-g" role="presentation">${NAVG[k]}</p>`:"")+`<button role="tab" type="button" data-tab="${k}" aria-selected="${k===tab}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICO[k]}"/></svg><span>${l}</span></button>`).join("")}
 function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").contains(ae)?ae.id:null;let pos=null;try{pos=ae.selectionStart}catch(e){}
   if(isMgr()){TABS=ALLTABS.filter(t=>t[0]!=="mine");if(!window.__mgrInit){window.__mgrInit=1;tab="payout"}if(tab==="mine"||tab.startsWith("r_"))tab="payout"}
@@ -447,6 +476,8 @@ function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").cont
     document.body.classList.add("repv");if(repMode){TABS=repTabs(repMode);if(!TABS.some(x=>x[0]===tab))tab="r_home"}if(!repMode){renderTabs();$("#vt").textContent="Link your login";$("#sideFoot").innerHTML="";$("#view").innerHTML=linkHtml();return}}
   if(canEdit){if(previewRep&&rep(previewRep)){TABS=repTabs(previewRep);if(!TABS.some(x=>x[0]===tab))tab="r_home";ST.m.id=previewRep;document.body.classList.add("repv")}else{previewRep=null;TABS=ALLTABS;if(tab.startsWith("r_"))tab="mine";document.body.classList.remove("repv")}}
   {const bs=$(".side .brand span"),eb=$(".eyebrow");if(bs)bs.textContent=RV()?"Rep":"HQ";if(eb)eb.textContent=RV()?"Quota Rep":"Quota HQ"}
+  $("#period").style.display=!RV()&&["dash","sales","team","comm","exp","inc"].includes(tab)?"":"none";
+  {const mm=RV()?rep(RV()):me(),nm=isMgr()?(myEmail||"Manager"):(mm&&mm.name)||"Quota";$("#acctAv").textContent=isMgr()?"M":initials(nm);$("#acctWho").innerHTML=`<b>${esc(nm)}</b><span>${isMgr()?"Manager":RV()?(previewRep?"Previewing rep portal":"Rep"):"Admin"}</span>`;$("#acctOut").hidden=!window.QHQ;applyTheme(THEME)}
   renderTabs();const R=range();$("#vt").textContent=(TABS.find(t=>t[0]===tab)||[])[1]||"";
   const m=RV()?rep(RV()):me();$("#sideFoot").innerHTML=isMgr()?`<b>${esc(myEmail||"Manager")}</b>Manager · review &amp; expenses`:m?`<b>${esc(m.name)}</b>${esc(m.role||"")}${RV()?"":" · "+D.reps.length+" on team"}`:`<b>Set up</b>Add yourself under Reps`;
   ({r_home:vMine,r_pay:vMine,r_pipe:vMine,r_board:vMine,r_goals:vMine,r_team:vMine,dash:vDash,sales:vSales,team:vTeam,comm:vComm,payout:vPayouts,goals:vGoals,mine:vMine,pay:vPay,exp:vExp,inc:vInc})[tab](R);
@@ -455,8 +486,8 @@ function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").cont
   if(tab==="team"&&canEdit&&window.QHQ)$("#view").insertAdjacentHTML("afterbegin",loginsHtml());
   if(canEdit&&!RV()&&window.QHQ&&(window.QHQ.applicants||[]).length&&(tab==="team"||tab==="dash"))$("#view").insertAdjacentHTML("afterbegin",tab==="team"?recruitsHtml():`<div class="pvbar" style="margin-bottom:0"><b>${window.QHQ.applicants.length} new recruit${window.QHQ.applicants.length>1?"s":""} waiting</b><span>Set their pay scale and approve</span><button class="btn btn-lime btn-sm" type="button" data-tab="team">Review</button></div>`);
   if(tab==="team"&&canEdit&&window.QHQ&&Object.keys(ALINKS).length)$("#view").insertAdjacentHTML("afterbegin",alinksHtml());
-  if(window.QHQ&&!previewRep&&(repMode||(tab==="mine"&&canEdit))&&!$("#view [data-recruit]")){const tb=$("#view .toolbar");if(tb)tb.insertAdjacentHTML("beforeend",`<button class="btn btn-lime btn-sm" type="button" data-recruit="1" style="margin-left:auto">+ Recruit a rep</button>`)}
-  if(RLINK&&window.QHQ&&(repMode||tab==="mine")){const tb=$("#view .toolbar");if(tb)tb.insertAdjacentHTML("afterend",`<div class="todo" style="margin-bottom:16px"><b>Your recruit link</b><span>Text this to anyone you want on your team. They fill out a quick form, Aidan approves, and they land under you.</span><span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><input readonly value="${esc(RLINK)}" style="flex:1;min-width:200px" aria-label="Recruit link"><button class="btn btn-lime btn-sm" type="button" data-copy="${esc(RLINK)}">Copy</button>${navigator.share?`<button class="btn btn-out btn-sm" type="button" data-share="${esc(RLINK)}">Share</button>`:""}</span></div>`)}
+  if(window.QHQ&&!previewRep&&((repMode&&tab==="r_home")||(tab==="mine"&&canEdit))&&!$("#view [data-recruit]")){const tb=$("#view .toolbar");if(tb)tb.insertAdjacentHTML("beforeend",`<button class="btn btn-lime btn-sm" type="button" data-recruit="1" style="margin-left:auto">+ Recruit a rep</button>`)}
+  if(RLINK&&window.QHQ&&((repMode&&tab==="r_home")||tab==="mine")){const tb=$("#view .toolbar");if(tb)tb.insertAdjacentHTML("afterend",`<div class="todo" style="margin-bottom:16px"><b>Your recruit link</b><span>Text this to anyone you want on your team. They fill out a quick form, Aidan approves, and they land under you.</span><span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><input readonly value="${esc(RLINK)}" style="flex:1;min-width:200px" aria-label="Recruit link"><button class="btn btn-lime btn-sm" type="button" data-copy="${esc(RLINK)}">Copy</button>${navigator.share?`<button class="btn btn-out btn-sm" type="button" data-share="${esc(RLINK)}">Share</button>`:""}</span></div>`)}
   if(window.QHQ&&!$("#sideFoot [data-logout]"))$("#sideFoot").insertAdjacentHTML("beforeend",`<button type="button" class="so" data-logout="1">Sign out</button>`);
   if(repOpen&&$("#repDrawer"))openRep(repOpen)}
 function linkHtml(){const mine=CLAIMS.find(c=>c.id===myUid);
@@ -1000,7 +1031,7 @@ function vMine(){
    <div class="panel s6"><div class="ph"><h3>Waiting on install</h3><span class="sub" style="margin:0">Red = 15+ days, call the customer</span></div>
     ${pendOwn.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Product</th><th>Submitted</th><th class="num">Waiting</th><th class="num">Pay</th></tr></thead><tbody>${pendOwn.map(s=>`<tr class="${repMode?"":"click"}" ${repMode?"":`data-edit="sales" data-id="${s.id}"`}><td>${esc(s.customer)||"—"}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td class="num ${age(s)>14?"age-late":""}">${age(s)}d${s.dueDate?`<br><span class="sub" style="margin:0">due ${fmtD(s.dueDate)}</span>`:""}</td><td class="num">${money(myPay(s))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">Nothing waiting. Every sale has installed or cancelled.</p>`}</div>`;
   B.pd=`<div class="panel s6"><div class="ph"><h3>Paydays</h3><span class="sub" style="margin:0">Fridays, 2 weeks after the install week</span></div>
-    ${pds.length?`<div class="tbl"><table><thead><tr><th>Friday</th><th>Status</th>${hasOv?'<th class="num">Personal</th><th class="num">Overrides</th>':""}<th class="num">Total</th><th></th></tr></thead><tbody>${pds.slice(0,10).map(p=>`<tr><td>${fmtD(p.k)}</td><td><span class="pill ${p.k<=t?"p-done":"p-pend"}">${p.k<=t?"Paid":"Upcoming"}</span></td>${hasOv?`<td class="num">${money(p.own)}</td><td class="num">${money(p.ov)}</td>`:""}<td class="num"><b>${money(p.own+p.ov)}</b></td><td class="num"><button class="btn btn-out btn-sm" type="button" data-rstmt="${p.k}" aria-label="Download statement for ${fmtD(p.k)}">Statement</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">Paydays appear once sales install.</p>`}</div>`;
+    ${pds.length?`<div class="tbl"><table><thead><tr><th>Friday</th><th>Status</th>${hasOv?'<th class="num">Personal</th><th class="num">Overrides</th>':""}<th class="num">Total</th><th></th></tr></thead><tbody>${pds.slice(0,10).map(p=>`<tr><td>${fmtD(p.k)}</td><td><span class="pill ${p.k<=t?"p-done":"p-pend"}">${p.k<=t?"Paid":"Upcoming"}</span></td>${hasOv?`<td class="num">${money(p.own)}</td><td class="num">${money(p.ov)}</td>`:""}<td class="num"><b>${money(p.own+p.ov)}</b></td><td class="num"><button class="btn btn-out btn-sm" type="button" data-rpk="${p.k}" data-tab="r_pay" aria-label="Open statement for ${fmtD(p.k)}">Statement</button></td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">Paydays appear once sales install.</p>`}</div>`;
   B.rec=`
   <div class="panel"><div class="ph"><h3>Recent installs</h3></div>${recent.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Product</th><th>Submitted</th><th>Installed</th><th>Payday</th><th class="num">Pay</th></tr></thead><tbody>${recent.map(s=>`<tr><td>${esc(s.customer)||"—"}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td>${fmtD(doneDate(s))}</td><td>${payoutPill(s)}</td><td class="num">${money(myPay(s))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No installs yet.</p>`}</div>`;
   B.hero=B.top.slice(B.top.indexOf('<div class="panel s5'),B.top.indexOf('<div class="panel s7"><div class="ph"><h3>Earnings')).trim();
@@ -1017,6 +1048,16 @@ function vMine(){
     ${sp.map(x=>`<div class="todo"><b>${esc(x.i.name)}: ${Math.max(0,x.tg-x.v)} to go</b><span>${money(num(x.i.reward))} · ends ${fmtD(x.i.end)}</span></div>`).join("")}
     ${!lateL.length&&!soon.length&&!sp.length&&gv&&!leftA?`<p class="sub" style="margin:0">All caught up.</p>`:""}</div>`;
   const stack=`<div class="s5 stack">${B.hero.replace('panel s5 ','panel ')}${B.daily.replace('panel s5 ','panel ')}</div>`;
+  const pkSel=ST.rpk&&PD[ST.rpk]?ST.rpk:(n1?n1.k:(pds[0]||{}).k),pItems=pkSel?both.filter(s=>s.status==="done"&&doneDate(s)&&ymd(payDate(s))===pkSel).sort((a,b)=>doneDate(a).localeCompare(doneDate(b))):[];
+  const pOwn=pItems.filter(s=>s.repId===id),pOv=pItems.filter(s=>s.repId!==id),sumP=l=>l.reduce((a,s)=>a+myPay(s),0),pP=PD[pkSel]||{own:0,ov:0};
+  const stRow=(s,ov)=>`<div class="st-row"><div><b>${ov?esc((repName(s.repId)||"").split(" ")[0])+" · ":""}${esc(s.customer)||"—"}</b><span>${esc(s.provider)} ${esc(s.product)} · sold ${fmtD(s.date)} · installed ${fmtD(doneDate(s))}</span></div><b>${money(myPay(s))}</b></div>`;
+  const stList=(l,lab)=>`<div class="st-list">${l.map(s=>stRow(s,lab==="Overrides")).join("")}<div class="st-row st-sum"><div><b>${lab}</b></div><b>${money(sumP(l))}</b></div></div>`;
+  B.stmt=pds.length?`<div class="dg stmt-wrap"><div class="panel s4"><div class="ph"><h3>Paydays</h3></div><div class="pd-list">${pds.slice(0,16).map(p=>`<button type="button" class="pd-item ${p.k===pkSel?"on":""}" data-rpk="${p.k}"><span><b>Fri ${fmtD(p.k)}</b><small>${p.n?`${p.n} install${p.n===1?"":"s"}${p.ov?" + overrides":""}`:"Overrides only"}</small></span><span><b>${money(p.own+p.ov)}</b><small class="${p.k<=t?"ok":"up"}">${p.k<=t?"Paid":"Upcoming"}</small></span></button>`).join("")}</div></div>
+   <div class="panel s8 stmt"><div class="ph"><div><h3>Pay statement</h3><span class="sub" style="margin:0">${pkSel?wkLabel(pkSel):""}</span></div><span class="pill ${pkSel<=t?"p-done":"p-pend"}">${pkSel<=t?"Paid":"Upcoming"}</span></div>
+    <div class="st-tot"><div><span>Personal</span><b>${money(pP.own)}</b><small>${pOwn.length} install${pOwn.length===1?"":"s"}</small></div>${hasOv?`<div><span>Overrides</span><b>${money(pP.ov)}</b><small>${pOv.length} from your team</small></div>`:""}<div class="hl"><span>Total</span><b>${money(pP.own+pP.ov)}</b><small>${pkSel<=t?"Paid":"Pays"} Fri ${fmtD(pkSel)}</small></div></div>
+    <h4>Your installs</h4>${pOwn.length?stList(pOwn,"Personal"):`<p class="sub">No personal installs in this payout.</p>`}
+    ${hasOv?`<h4>Overrides</h4>${pOv.length?stList(pOv,"Overrides"):`<p class="sub">No team installs in this payout.</p>`}`:""}
+    <div class="toolbar" style="margin-top:14px"><button class="btn btn-lime btn-sm" type="button" data-rstmt="${pkSel}">Download statement</button><span class="sub" style="margin:0">Installs pay the Friday two weeks after the install week.</span></div></div></div>`:`<div class="panel empty"><b>No paydays yet</b>Statements show up once your sales install.</div>`;
   const dg=(...x)=>`<div class="dg">${x.join("")}</div>`,full=x=>x.replace('class="panel s6"','class="panel"'),sec=tab.startsWith("r_")?tab:null;
   const cx=mine.filter(s=>s.status==="cancelled").sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const cxP=`<div class="panel"><div class="ph"><h3>Cancelled</h3><span class="sub" style="margin:0">${cx.length} all time</span></div>${cx.length?`<div class="tbl"><table><thead><tr><th>Customer</th><th>Product</th><th>Submitted</th><th class="num">Pay lost</th></tr></thead><tbody>${cx.map(s=>`<tr><td>${esc(s.customer)||"—"}</td><td>${esc(s.provider)} ${esc(s.product)}</td><td>${fmtD(s.date)}</td><td class="num">${money(num(s.repPay)*qty(s))}</td></tr>`).join("")}</tbody></table></div>`:`<p class="sub" style="margin:0">No cancels. Keep it that way.</p>`}</div>`;
@@ -1024,7 +1065,7 @@ function vMine(){
   const hi=RV()?`<div class="toolbar"><span class="sub" style="margin:0">Hi ${esc((r.name||"").split(" ")[0])}. Here's what you're getting paid and what's coming.</span></div>`:head+`<div class="toolbar"><button class="btn btn-ink btn-sm" type="button" data-pv="${id}">Preview ${isMe?"the":"their"} rep portal</button></div>`;
   $("#view").innerHTML=pv+({
     r_home:()=>hi+dg(stack,B.ghero)+B.pipe+dg(attn,lbMini)+dg(B.pd.replace('panel s6','panel s12')),
-    r_pay:()=>B.top+full(B.pd)+B.rec,
+    r_pay:()=>B.top+B.stmt,
     r_pipe:()=>B.pipe+full(B.wp)+cxP+B.rec,
     r_board:()=>full(B.lbg),
     r_goals:()=>dg(B.ghero.replace("panel s7","panel s12"))+dg(B.daily,B.extra.replace('panel s6','panel s7')),
@@ -1266,6 +1307,10 @@ document.addEventListener("click",e=>{
     else{const t="pay",v=gb.dataset.gset==="custom"?num(($("#gcustom")||{}).value):num(gb.dataset.gset);if(!v){toast("Enter a number");return}
       if(previewRep){toast("Preview only. Reps set their own goal.");return}saveGoal(id,t,v)}
     return}
+  const ab=e.target.closest("#acctBtn");if(ab){const m=$("#acctMenu");m.hidden=!m.hidden;ab.setAttribute("aria-expanded",String(!m.hidden));return}
+  if(!e.target.closest(".acct")&&$("#acctMenu"))$("#acctMenu").hidden=true;
+  const thb=e.target.closest("[data-theme-set]");if(thb){THEME=thb.dataset.themeSet;try{localStorage.setItem(THK,THEME)}catch(err){}applyTheme(THEME);return}
+  const rpb=e.target.closest("[data-rpk]");if(rpb){ST.rpk=rpb.dataset.rpk;if(rpb.dataset.tab)tab=rpb.dataset.tab;window.scrollTo(0,0);render();return}
   const lbb=e.target.closest("[data-lb]");if(lbb){ST.m.lb=lbb.dataset.lb;render();return}
   const rs=e.target.closest("[data-rstmt]");if(rs){repStmt(rs.dataset.rstmt);return}
   const qh=e.target.closest("[data-logout],[data-logtoggle],[data-invite],[data-revoke],[data-copy],[data-recruit],[data-share],[data-appr],[data-decl],[data-mgrinv]");
