@@ -1,0 +1,48 @@
+[
+ {
+  "col": "sales",
+  "id": "NC1100262002",
+  "patch": {
+   "status": "pending",
+   "notes": "Back in The League Submissions (Frontier 2 Gig), not matched to an order yet. Restored to pending Nov 22."
+  }
+ },
+ {
+  "col": "sales",
+  "id": "SUB-e658f297",
+  "patch": {
+   "status": "pending",
+   "notes": "Back in The League Submissions, not matched to an order yet. Restored to pending Nov 22."
+  }
+ },
+ {
+  "col": "sales",
+  "id": "SUB-ad0eb334",
+  "set": {
+   "customer": "Scarlett Roth",
+   "repId": "hunter",
+   "provider": "AT&T",
+   "product": "Internet",
+   "type": "fiber",
+   "status": "pending",
+   "date": "2026-10-14",
+   "qty": 1,
+   "notes": "AT&T Internet + 4 phone lines (League submission SUB-ad0eb334). Lines being confirmed; AT&T rates not set yet."
+  }
+ },
+ {
+  "col": "sales",
+  "id": "SUB-ad0eb334-lines",
+  "set": {
+   "customer": "Scarlett Roth",
+   "repId": "hunter",
+   "provider": "AT&T",
+   "product": "New line",
+   "type": "phone",
+   "status": "pending",
+   "date": "2026-10-14",
+   "qty": 4,
+   "notes": "4 phone lines with the AT&T Internet sale (League submission SUB-ad0eb334). Being confirmed; rate not set yet."
+  }
+ }
+]
