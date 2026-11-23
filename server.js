@@ -11,7 +11,7 @@ const BASE_URL = (process.env.BASE_URL || `http://localhost:${PORT}`).replace(/\
 const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
 const SECURE = BASE_URL.startsWith("https");
 const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: process.env.PGSSL === "1" ? { rejectUnauthorized: false } : undefined });
-const COLS = ["reps", "rates", "sales", "expenses", "incentives", "goals", "reviews"];
+const COLS = ["reps", "rates", "sales", "expenses", "incentives", "goals", "reviews", "partners", "crews", "territories"];
 const EXP_CATS = ["Flights", "Housing", "Hotel", "Rental car", "Gas", "Food", "Tickets & events", "Supplies", "Other"];
 
 /* ---------- db ---------- */
@@ -112,7 +112,9 @@ async function dataFor(u) {
     return o;
   });
   const goals = D.goals.filter(g => g.id === "main").map(g => Object.assign({}, g, { _teamMonthRev: teamMonthRev }));
-  return { reps, sales: out, rates: [], expenses: [], incentives: D.incentives, goals, _pre: true, _me: { id: "u" + u.id, email: u.email, role: "rep", repId: me, prefs: pr ? pr.data : {} } };
+  const myTeam = (D.reps.find(r => r.id === me) || {}).team || "", myCrews = new Set(D.crews.filter(c => c.name === myTeam).map(c => c.id));
+  const territories = D.territories.filter(t => (t.repIds || []).includes(me) || (t.crewId && myCrews.has(t.crewId))).map(t => ({ id: t.id, isp: t.isp, city: t.city, start: t.start, end: t.end, aNote: t.aNote, leads: t.leads, repIds: [me] }));
+  return { reps, sales: out, rates: [], expenses: [], incentives: D.incentives, goals, territories, partners: [], crews: [], _pre: true, _me: { id: "u" + u.id, email: u.email, role: "rep", repId: me, prefs: pr ? pr.data : {} } };
 }
 
 /* ---------- http ---------- */
