@@ -1,0 +1,4 @@
+[
+ {"col":"sales","id":"NC1100262849","set":{"customer":"Elizabeth Miller","repId":"hunter","provider":"Brightspeed","product":"2 Gig","type":"fiber","status":"pending","date":"2026-10-17","dueDate":"2026-10-23","qty":1,"notes":"From BASS order confirmation (Carthage, NC; install scheduled Oct 23). Not in The League orders yet; confirm install."}},
+ {"col":"sales","id":"NC1100263363","set":{"customer":"Nyzaria Mcneill","repId":"hunter","provider":"Brightspeed","product":"2 Gig","type":"fiber","status":"pending","date":"2026-10-19","dueDate":"2026-10-20","qty":1,"notes":"From BASS order confirmation (Vass, NC; install scheduled Oct 20). Not in The League orders yet; confirm install."}}
+]
