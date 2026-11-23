@@ -1,0 +1,248 @@
+5b9a4e95|Quantum|Mesa, AZ|616|available|56|||0|33.415|-111.831|
+82b26f15|Kinetic|Coweta, OK|2000|available|86|||0|35.952|-95.651|
+13a1b41c|Verizon|Bradford, PA|2600|available|3|||0|41.956|-78.649|
+2359fba1|Verizon|Bradford, PA|1500|available|95|||0|41.956|-78.649|
+04261e9a|Kinetic|Canton, GA|8000|available|50|||0|34.237|-84.491|
+57ee2ae9|Kinetic|David City & Seward, NE|2291|available|73|||0|41.493|-99.902|
+cb0f629b|Kinetic|Purcell, OK|2500|available||||0|35.014|-97.361|
+01c6fc58|Kinetic|Prague, Tecumseh & Meeker (NOMAD), OK|1978|cooldown||||0|35.487|-96.685|
+242effbf|Kinetic|Greenbriar, AR|400|cooldown||||0|35.234|-92.388|
+c76cc51b|Brightspeed|Martinsville, VA|9207|available||||0|36.692|-79.873|
+a924d60f|Brightspeed|Buena Vista, VA|2750|available||||0|37.734|-79.354|
+18f9cc5a|Brightspeed|Lexington, VA|2571|available||||0|37.784|-79.443|
+b40c0e40|Brightspeed|Charlottesville, VA|5426|available||||0|38.030|-78.477|
+f618e59b|Brightspeed|Front Royal, VA|6769|available||||0|38.918|-78.194|
+68f43ecb|Brightspeed|Marion, VA|2635|available||||0|36.835|-81.515|
+0d8c1f68|Brightspeed|Wytheville, VA|2519|available||||0|36.948|-81.085|
+d4c8b180|Brightspeed|Clinton, NC|5028|available||||0|34.998|-78.323|
+3a85794b|Brightspeed|New Bern, NC|5000|blitzing||||0|35.108|-77.044|
+23dbf8c3|Brightspeed|Washington, NC|10000|available||||0|35.547|-77.052|
+7a695fc5|Brightspeed|Elizabeth City, NC|12000|available||||0|36.295|-76.251|
+63157fa2|Brightspeed|Wake Forest, NC|4596|available||||0|35.980|-78.510|
+fec6790a|Brightspeed|Hillsborough, NC|4162|available||||0|36.075|-79.100|
+f57664f5|Kinetic|Evarts (EVENTS), KY|3600|reserved||||0|36.863|-83.196|
+bd4dad04|Brightspeed|Greenwood, SC|3000|available||||0|34.195|-82.162|
+28775c9f|Brightspeed|Siloam Springs, AR|3500|available||||0|36.186|-94.542|
+af2ce417|Brightspeed|Bentonville, AR|4000|available||||0|36.372|-94.210|
+c07981ed|Brightspeed|Russellville, AR|9010|available||||0|35.278|-93.134|
+b9f9b3ef|Brightspeed|Trussville & Pell City, AL|10000|available||||0|33.586|-86.286|
+52b7c249|Brightspeed|Lima, OH|7500|cooldown||||0|40.743|-84.105|
+29047710|Frontier|LANCASTER, PA|5000|cooldown||||0|40.040|-76.304|
+40d638d9|Verizon|Lancaster, PA|900|available|66||🔥|0|40.040|-76.304|
+03d01ca4|Verizon|Custer City, PA|1000|available||||0|41.906|-78.651|
+6f2afe6a|Verizon|Deerfield, PA|450|available|45||🔥|0|41.726|-79.403|
+479346e4|Verizon|Sheffield, MA|2000|available|31||🔥|0|42.110|-73.355|
+179f102a|Frontier|Petersburg, WV|1600|available|59||🔥|1|38.598|-80.455|
+1010181b|Quantum|Minneapolis, MN|4000|available|86|||0|44.978|-93.265|
+e3bc5194|Frontier|Hartford, CT|8000|available||||0|41.766|-72.673|
+c28b3929|Brightspeed|Ottawa, OH|3000|available||||0|41.627|-82.993|
+fe520fdf|Verizon|Mahaffey, PA|1500|available|||🔥|0|41.203|-77.195|
+5be02dc9|BluePeak|Laramie, WY|2500|available||||1|41.311|-105.591|
+6d3082dc|BluePeak|Denison, TX|8000|available||||1|33.756|-96.537|
+beeca80d|BluePeak|Enid, OK|2500|available|43|||0|36.396|-97.878|
+a109ba9f|BluePeak|Bartlesville, OK|2500|available||||0|36.747|-95.978|
+d5ee98ee|Brightspeed|Fayetteville, NC|4000|cooldown||||0|35.052|-78.878|
+fdc1ec35|Wire3|Port St. Lucie, FL|2000|blitzing||||1|27.273|-80.358|
+e88a657a|Brightspeed|Marinette, WI|6000|available|41|||0|45.100|-87.631|
+1ee504e0|Brightspeed|Dothan, AL|12000|available||||0|31.223|-85.389|
+af479d0f|Brightspeed|Enterprise, AL|4000|available||||0|31.315|-85.855|
+3b855eee|Brightspeed|La Crosse, WI|12000|available||||0|43.814|-91.252|
+37e997c5|Brightspeed|Elizabethtown, PA|6000|available||||0|40.153|-76.602|
+ed3bf0af|Brightspeed|Springfield, MO|15000|available||||0|37.209|-93.292|
+297f9711|Brightspeed|Cameron, MO|2436|available||||0|39.741|-94.236|
+305ca5fb|Brightspeed|Newton, NJ|4000|available||||0|41.059|-74.754|
+9edba042|Brightspeed|Hillsborough, NJ|3000|available||||0|40.508|-74.637|
+e02dba30|Brightspeed|Sparta, NJ|4000|available||||0|41.036|-74.637|
+a5d1a6a1|Brightspeed|Syracuse, IN|2500|available||||0|41.428|-85.753|
+7dc330ea|Brightspeed|Columbia City, IN|4000|available||||0|41.157|-85.488|
+d2b427ed|Brightspeed|Warren, OH|7000|available||||0|41.238|-80.818|
+83ff17f8|Brightspeed|Bucyrus, OH|4500|available||||0|40.808|-82.975|
+0709a137|Brightspeed|Commerce & Cooper, TX|6000|available||||0|33.373|-95.688|
+c60afa07|Brightspeed|Humble, TX|2500|available||||0|29.999|-95.262|
+f2a6596c|Kinetic|Glasglow, KY|400|cooldown|||🔥|0|36.996|-85.913|
+e8e93bfe|Kinetic|(E) Tulsa, OK|4800|cooldown|||🔥|0|36.155|-95.990|
+5db859f0|Brightspeed|Killeen, TX|8000|cooldown||||0|31.121|-97.733|
+26aa502f|Quantum|St George, UT|10229|available|55|||0|37.097|-113.568|
+f9c9376a|Kinetic|Brownfield, TX|1400|cooldown||||0|33.181|-102.274|
+223a8838|Brightspeed|Johnson City, TN|10000|blitzing||||0|36.321|-82.343|
+9e3b8ba9|Frontier|Parkersburg / Petersburg, WV|5000|available|101|||1|39.264|-81.561|
+1a86f78e|Kinetic|Kittanning, PA|6000|inactive||||1|40.816|-79.522|
+1fa94f14|Verizon|Pottstown, PA|9510|available|9|||0|40.245|-75.650|
+db3a69d2|Kinetic|(N) CLAYTON, EUFAULA, STEELE, AL|1028|available||||1|31.891|-85.145|
+2787d24e|Kinetic|Flatwoods, KY|2000|available||||1|38.523|-82.717|
+cbe7aded|Kinetic|Dumas, TX|6000|inactive||||1|35.865|-101.973|
+828d544d|Wire3|Ormond Beach, FL|2000|available|80|||1|29.286|-81.056|
+9d661e99|Wire3|Mt Dora, FL|1500|available|24|||1|28.802|-81.645|
+0a1fac36|Ting|Thornton, CO|3000|cooldown||||0|39.868|-104.972|
+efb2609b|Quantum|Seattle, WA|7500|available||||0|47.606|-122.333|
+9fa02288|Kinetic|Ashland, KY|2000|available|107|||1|38.479|-82.638|
+14001ed6|Kinetic|Levelland & Lubbock, TX|1500|cooldown||||1|33.578|-101.992|
+13d046bd|Ripple|Port Charlotte, FL|5000|available|28|||0|27.010|-82.141|
+b406377d|Frontier|Mammoth Lakes, CA|950|available|11|||0|37.649|-118.972|
+3d08a208|Kinetic|Lititz, PA|1800|cooldown||||1|40.157|-76.307|
+77bbee48|Kinetic|thomaston, GA|2500|available|86|||1|32.888|-84.327|
+0061e2a5|Point Broadband/Clearwave|MARION, VA|8500|available||||0|36.835|-81.515|2 MONTHS FREE - $49 1G - $200 GC
+2f19694a|BluePeak|Rapid City, SD|4000|available||||1|44.081|-103.231|
+793ed6af|BluePeak|Shawnee, OK|2000|available|93|||1|35.327|-96.925|
+6045e68d|BluePeak|Lawton, OK|4000|available||||0|34.608|-98.392|
+f57bd676|BluePeak|Sheridan, WY|1500|cooldown||||0|44.797|-106.956|
+b7f22cd2|Kinetic|Meadville, PA|6000|inactive||||1|41.641|-80.151|
+e5a9d804|Kinetic|Morehead & Co., KY|6000|available|102|||1|38.177|-83.436|
+a88c2ee5|Kinetic|Tulsa, OK|5000|available|93|||1|36.155|-95.990|
+05db8738|Quantum|Mesa / Cave Creek, AZ|3400|available||||0|33.832|-111.947|
+0803c7d2|Kinetic|Broken Arrow, OK|500|cooldown|||🔥|0|36.061|-95.797|
+5bfdc37d|Brightspeed|Pekin, IL|8000|available|||🔥|0|40.568|-89.641|
+142eb970|Quantum|Las Vegas, NV|10394|available|55|||0|36.172|-115.139|
+d918f114|Verizon|Rockland, NY|50000|available||||0|41.149|-73.983|
+7d6922b1|Verizon|Philadelphia & Co., PA|13000|available|79|||0|40.015|-75.131|
+7798e56d|Verizon|Media, PA|8902|available||||0|39.917|-75.388|
+c56ecd94|Verizon|Downingtown, PA|7835|available||||0|40.006|-75.703|
+11a38189|Verizon|Harleysville, PA|6099|available||||0|40.280|-75.387|
+169b2360|Verizon|Hatfield, PA|4304|available||||0|40.280|-75.299|
+1a822e09|Verizon|Lansdale, PA|6761|available||||0|40.241|-75.284|
+8779f985|Verizon|Phoenixville, PA|9683|available||||0|40.130|-75.515|
+7d1e97f5|Verizon|Royersford, PA|4528|available||||0|40.184|-75.538|
+f9b16a53|Verizon|Baltimore, MD|10000|available||||0|39.291|-76.610|
+60d02798|Brightspeed|Collinsville, VA|2792|available||||0|36.715|-79.915|
+bb6c868a|Brightspeed|Foley & Robertsdale, AL|3000|available||||0|30.546|-87.585|
+28bd7fd7|Brightspeed|Monticello, IN|3000|available||||0|40.745|-86.765|
+5fca3bd0|Brightspeed|Stephenville, TX|4000|available||||0|32.221|-98.202|
+577636ec|Point Broadband/Clearwave|CANTON, GA|2500|available||||0|32.157|-82.907|3 MONTHS FREE - $49 1G - $200 GC
+188b0137|Fidium|Conroe, TX|10000|available||||1|30.312|-95.456|
+d932ab58|Verizon|Portage, PA|700|available|45||🔥|0|40.389|-78.672|
+42392fec|Kinetic|Callahan (EVENTS), FL|2500|available|91|||0|30.562|-81.831|
+e750fe9b|Verizon|Conshohocken, PA|4164|available||||0|40.079|-75.302|
+13a612ef|Kinetic|(N) Kenton, OH|0|cooldown|||🔥|0|40.112|-83.749|
+c92ec57b|Ting|Charlottesville, VA|1000|available||||0|38.030|-78.477|
+6bf9c0cf|Ting|Westminster, MD|1000|available||||0|39.575|-76.996|
+a143fbf8|Kinetic|Winder (EVENTS), GA|5000|available|11|||0|33.993|-83.720|
+0162d4cd|Kinetic|Boyerton (EVENTS), PA|4500|available||||0|40.334|-75.637|
+70b0ba1c|Fidium|Sacramento, CA|10000|available|115|||0|38.578|-121.494|
+4e4273d7|Kinetic|Howe / Wister, OK|1779|cooldown||||0|34.951|-94.637|
+bbae8f6f|Frontier|Ballinger, TX|2000|blitzing|||🔥|0|31.738|-99.947|
+78ba1640|BluePeak|Grand Forks, ND|4000|available|12|||0|47.925|-97.033|
+8ac91619|Brightspeed|Columbia, MO|10000|cooldown||||0|38.952|-92.328|
+627b8e06|Quantum|Salt Lake City, UT|29800|cooldown||||0|40.761|-111.888|
+1e946c52|Wire3|Melbourne, FL|800|available|16|0|🔥|0|28.079|-80.608|
+de948df3|Fidium|Katy, TX|10000|blitzing||||0|29.786|-95.825|
+d1b7df3b|Brightspeed|Mansfield, AR|2500|reserved|||🔥|0|35.060|-94.250|
+e0246f12|Quantum|Fort Myers, FL|6800|reserved||||0|26.641|-81.861|
+15e99e8c|Verizon|Albany, NY|20000|cooldown||||0|42.652|-73.754|
+4e027d95|Ripple|Charlotte, NC|28000|reserved||||0|35.227|-80.841|
+463a86bd|Verizon|Clearfield, PA|10000|available||||0|41.027|-78.439|
+763dec03|Kinetic|Concord (EVENTS), NC|3000|cooldown||||0|35.410|-80.582|
+ada46973|Kinetic|Cleveland, GA|3100|available|95|||0|34.597|-83.763|
+d75999e0|Kinetic|Lincoln & Ashland, NE|2773|available|67|||0|40.814|-96.703|
+73204f09|Kinetic|Dewitt & Le Claire (NOMAD), IA|2234|available|60|||0|41.598|-90.346|
+debc0888|Verizon|Newfoundland, PA|700|cooldown|||🔥|0|41.307|-75.320|
+377b6a35|Verizon|Syracuse, NY|25000|cooldown||||0|43.049|-76.147|
+7720e455|Brightspeed|Tyler, TX|4000|available||||0|32.351|-95.301|
+81fe3a0b|Brightspeed|Charlottesville , VA|2000|available|73|||0|38.030|-78.477|
+71990dd1|Ting|Holly Springs, NC|2500|available|74|||0|35.651|-78.834|
+908d39eb|Kinetic|(E) Greene, IA|350|cooldown|||🔥|0|42.896|-92.802|
+e7ba0da9|Quantum|Gilbert, AZ|2400|available|55|||0|33.353|-111.789|
+dcdff5e5|Verizon|PHILADELPHIA, PA|10000|available|56|||0|39.953|-75.165|
+ee27ed03|Quantum|Phoenix, AZ|7550|available|45|||0|33.448|-112.073|
+80d25248|Frontier|Inyokern, CA|6700|available||||1|35.647|-117.812|
+8fec0fef|Kinetic|LEXINGTON (NOMAD), KY|2500|available|81||🔥|0|38.039|-84.515|
+a5278e4f|Kinetic|(NOMAD) CLAYTON, EUFAULA, ABBEVILLE, NEWVILLE, AL|1127|available||||0|31.891|-85.145|
+7a1d8050|Kinetic|(N) Clarksville, TX|0|cooldown|||🔥|0|33.611|-95.053|
+64fb1bb6|Kinetic|ODENVILLE, TITUSVILLE (NOMAD), AL|2186|cooldown||||0|33.677|-86.397|
+08e8a2af|Kinetic|(NOMAD-OCT) Berryville & Green Forest , AR|1200|cooldown||||0|36.335|-93.436|
+55044693|BluePeak|Sioux Falls, SD|4000|cooldown||||0|43.546|-96.731|
+dfca0d32|Kinetic|Nebraska City (NOMAD), NE|1809|available||||0|40.677|-95.859|
+2c122440|Quantum|Cape Coral, FL|16000|available|||🔥|0|26.630|-81.960|
+eb05411e|Kinetic|HODGENVILLE, CECILIA, RINEYVILLE, KY|1828|available|6|||1|37.575|-85.740|
+faab4ec8|Kinetic|(E). Elizabethtown, KY|0|available||||0|37.704|-85.871|
+2c08441b|Quantum|Fort Collins, CO|11653|cooldown||||0|40.585|-105.084|
+7697e243|Frontier|Brooklyn & Surrounding, MI|3000|available|||🔥|0|42.106|-84.248|
+9796fc54|Quantum|Omaha, NE|8000|available|101|0||0|41.257|-95.935|
+b5ea46b2|Kinetic|Marshall, Tuckerman, Swifton, AR|1100|cooldown||||0|35.825|-91.131|
+02455684|Verizon|California/Lexington Park, MD|1500|available|3|||0|38.258|-76.462|
+2b71eb97|Verizon|Allentown & Bethlehem, PA|3500|available||||0|40.602|-75.471|
+2012bc5e|Fidium|Brattleboro & Rutland, VT|1800|available||||1|43.611|-72.973|
+e2e4434e|Fidium|Orchard Beach, ME|2500|cooldown||||1|43.518|-70.377|
+ed386f12|Frontier|Upper Jay, NY|5000|available||||1|44.336|-73.776|
+90c13dcc|Frontier|Shepherd & Mount Pleasant, MI|2500|cooldown||||0|43.524|-84.695|
+8863dbd0|Brightspeed|Rensselaer & Remington, IN|2500|available||||0|40.937|-87.151|
+c8b61d8a|Brightspeed|OTTOWA, OH|2000|available||||0|41.019|-84.047|
+c7de2eb1|Fidium|Rutland, VT|1500|available||||1|43.611|-72.973|
+7e25390e|Frontier|Alpena (Nomad), MI|2500|available||||1|45.062|-83.433|
+8f1cc6c8|Brightspeed|Humble, TX|5000|available||||0|29.999|-95.262|
+a4b79331|Brightspeed|Mabank, TX|800|available|40|||0|32.367|-96.101|
+0ad2e2d9|Kinetic|Spartanburg (Inman) - EVENTS, SC|3500|available|15|||0|35.049|-82.091|
+9760210f|Kinetic|GRANDVIEW, BLUM, KOPPERL, WHITNEY, TX|1400|cooldown||||0|32.070|-97.501|
+5af0d7f5|Kinetic|(EVENTS) Ottumwa, IA|3000|cooldown||||1|41.016|-92.408|
+6e79eb67|BluePeak|Muskogee, OK|800|available||||0|35.748|-95.370|
+f3b3b7e9|Kinetic|Fritch, TX|1004|available||||0|35.640|-101.603|
+f933ec5b|Kinetic|Crete, Hickman, Cortland, and Adams (NOMAD), NE|1200|available||||0|40.461|-96.510|
+811c0fbd|Kinetic|Flemingsburg, KY|2284|available||||0|38.422|-83.734|
+288cdfdb|Kinetic|Waxhaw, NC|2322|available||||0|34.925|-80.743|
+3f9cde75|Kinetic|Lexington, NC|6800|cooldown||||0|35.824|-80.253|
+136d21ba|Kinetic|Cumberland, Harlan & Closplint, KY|1828|available|10|||0|36.895|-83.118|
+b8ea92b0|Kinetic|Spearman (SPANISH), Perryton, & Booker, TX|3626|available|2|||0|36.198|-101.192|
+72e4e9a9|Kinetic|Emmetsburg (Nomad), IA|200|cooldown||||0|43.113|-94.683|
+971740ba|Kinetic|BRYANTSVILLE, LANCASTER, STANFORD, HUSTONVILLE, KY|2068|cooldown||||0|37.473|-84.816|
+b4c96210|Kinetic|West Fork & Elkins (NOMAD), AR|850|available||||0|35.955|-94.165|
+49d184a8|Kinetic|Foss (EVENTS), OK|300|available||||0|35.454|-99.170|
+9aec3b92|Frontier|Leroy / Perry, NY|8000|available|19|||0|42.790|-77.996|
+d4008f15|Kinetic|Reinhold, Adamsport, Oley (NOMAD), PA|1499|available|34|||0|40.389|-75.791|
+5194f73f|Kinetic|Mertztown & Topton (EVENTS), PA|1300|available|30|||0|40.503|-75.701|
+dc849064|Kinetic|(EVENTS) Waverly, NE|1000|cooldown||||0|40.916|-96.530|
+16520ad2|Kinetic|(NOMAD) CLAYTON, EUFAULA, STEELE, AL|1028|cooldown||||0|31.891|-85.145|
+4f0ac28f|Kinetic|PITTSBURGH, PA|1000|cooldown|||🔥|0|40.439|-79.997|
+10821ea5|Verizon|Wyoming, PA|1000|cooldown||||0|41.500|-76.039|
+3389f5df|Kinetic|(N) Hobbs, NM|6800|reserved|||🔥|0|32.701|-103.134|
+a7841b7f|Kinetic|Interlachen & Waldo (EVENTS), FL|500|blitzing||||0|29.624|-81.890|
+2a1fc0d9|Kinetic|(E) Beatrice , NE|2500|available|||🔥|0|40.266|-96.747|
+0d666bc7|Kinetic|(E) WAHOO, NE|1000|available||||1|41.212|-96.621|
+29bcb354|Brightspeed|NASHVILLE, NC|1500|available||||0|35.975|-77.966|
+d7854879|Kinetic|(NOMAD) FAIRMOUNT CITY, NEW BETHELHEM, DAYTON, SLIGO, PA|1400|cooldown||||0|41.002|-79.331|
+3be7805d|Frontier|NEW RICHMOND, WI|3500|cooldown||||0|45.123|-92.537|
+3a61a8a7|Fidium|Wells, ME|7500|cooldown|||🔥|0|43.322|-70.581|
+5e3456ea|Frontier|Lake Marblehead, OH|0|cooldown||||0|41.543|-82.736|
+8b9f70ed|AT&T|St George, UT|10000|cooldown||||0|37.097|-113.568|
+5818e1c7|Kinetic|Manchester , KY|0|available||||0|37.154|-83.762|
+9327ed53|Brightspeed|Raleigh, NC|8765|cooldown||||0|35.780|-78.638|
+3c353eaa|Frontier|TOMAHAWK, RHINELANDER, EAGLE RIVER, MERRILL, WI|1200|cooldown|||🔥|0|45.917|-89.244|
+908395bc|Kinetic|(N) Jamestown, PA|1500|cooldown||||0|41.492|-80.439|
+18f64c4a|Kinetic|Creston & Diagonal (EVENTS), IA|800|available|||🔥|0|41.059|-94.361|
+aa7b369f|Kinetic|Hasting, NE|4000|available|4||🔥|0|40.586|-98.390|
+59b52231|Kinetic|Donalsonville, GA|800|available||||0|31.040|-84.879|
+ac678eca|Point Broadband/Clearwave|Hagerstown, MD|8000|available||||0|39.642|-77.720|
+178dc473|Kinetic|LEEDS, ODENVILLE, EUFAULA, COLUMBIA (EVENTS), AL|1000|cooldown||||0|31.891|-85.145|
+97333b9d|Kinetic|Fitzgerald (EVENTS), GA|750|available|26|||0|31.715|-83.253|
+b7636df0|Kinetic|Douglas (EVENTS), GA|800|available|26|||0|31.509|-82.850|
+322d5248|Kinetic|Newton (Nomad), IA|2500|available|39|||0|41.703|-93.057|
+1a4a5c04|Kinetic|Perryville, AR|500|available|33|||0|35.005|-92.801|
+65773d32|Kinetic|Jamestown (EVENTS), NY|8000|available|28|||0|42.097|-79.235|
+3620414b|Fidium|Brattleboro, VT|2000|available|5|||1|42.851|-72.558|
+f11271b2|Kinetic|Becker & North Branch, MN|750|available|||🔥|0|45.394|-93.870|
+08e9d5c4|BluePeak|Cheyenne, WY|500|cooldown|||🔥|0|41.135|-104.821|
+33aa3685|BluePeak|Casper, WY|400|cooldown|||🔥|0|42.849|-106.298|
+8655ba54|Kinetic|(N) RICHMOND, TX|1000|cooldown|||🔥|0|29.582|-95.761|
+5c2133a9|Fidium|MILTON, VT|3700|cooldown|||🔥|0|44.630|-73.116|
+5f7f00c1|Kinetic|(N) Granbury & Godley, TX|1700|cooldown|||🔥|0|32.449|-97.791|
+c49d0b87|Kinetic|(N) Fairfield & Hubbard, TX|1100|cooldown|||🔥|0|31.725|-96.165|
+8fe9ec48|Wire3|Palm Bay, FL|750|blitzing|||🔥|0|28.034|-80.589|
+0172f060|Kinetic|(N) WILMORE & MIDWAY, KY|1200|cooldown|||🔥|0|37.861|-84.663|
+ad805be9|Kinetic|MURRYSVILLE, PA|1200|cooldown|||🔥|0|40.425|-79.667|
+4c8e35ae|Kinetic|HIGH SPRINGS, FL|2000|available|||🔥|0|29.827|-82.597|
+9191c942|Kinetic|(E) EPHRATA, PA|2000|available|||🔥|0|40.180|-76.179|
+758f8d98|Fidium|Mlton, VT|1500|available|||🔥|0|44.630|-73.116|
+39ffd6a5|Fidium|East Millinocket, ME|1500|available|||🔥|0|45.628|-68.573|
+161f7fb5|Fidium|Eastport, ME|1500|available|||🔥|0|44.906|-66.985|
+f5d615d9|Fidium|Bar Harbor , ME|3500|cooldown|||🔥|0|44.388|-68.204|
+12b6f6a9|BluePeak|Mills, WY|1000|available|||🔥|0|42.852|-106.385|$40 for a gig - no competition
+75290f66|Wire3|Ocala, FL|1200|reserved|||🔥|0|29.185|-82.134|
+d71223ae|Brightspeed|Warsaw, IN|1500|cooldown||||0|41.238|-85.853|
+2b2e3dbe|Kinetic|(N) APOLLO, PA|1400|cooldown|||🔥|0|40.581|-79.566|
+901e71e1|BluePeak|Buffalo, WY|800|cooldown|||🔥|0|44.348|-106.699|
+841e79df|Kinetic|(N) High Point & Linwood, NC|1500|available|||🔥|0|35.956|-80.005|
+5bf75eb6|Brightspeed|Dillsboro /Franklin, IN|5000|blitzing|||🔥|0|39.018|-85.059|
+dddaca84|BluePeak|Sioux Falls (Local), SD|1500|available||||0|43.562|-96.831|
+5acfc969|Brightspeed|Plateville, WI|5000|blitzing|||🔥|0|42.734|-90.478|
+a4cd4eee|Kinetic|(E) Sugarland, TX|600|cooldown||||0|29.598|-95.623|
+3a9b7e56|BluePeak|Alva, OK|350|cooldown||||0|36.805|-98.666|
+e78b7b05|Brightspeed|Plymouth, IN|0|blitzing|||🔥|0|41.344|-86.310|
+bcb8104e|Brightspeed|Johnson City, TN|1800|available||||0|36.321|-82.343|

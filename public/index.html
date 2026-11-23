@@ -105,6 +105,11 @@ tr:last-child td{border-bottom:0}
 .pill{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700}
 .p-done{background:var(--tint);color:var(--green)}.p-pend{background:var(--warn-bg);color:var(--warn)}.p-cx{background:var(--bad-bg);color:var(--bad)}
 .p-you{background:var(--lime);color:var(--ink)}.p-tag{border:1px solid var(--line-2);color:var(--muted)}
+.ar-k{text-align:left;cursor:pointer;font:inherit;color:inherit}.ar-k.on{outline:2px solid var(--lime);outline-offset:-2px}.ar-k .v{font-size:26px}
+.ar-ladder{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.ar-ladder div{display:flex;flex-direction:column}.ar-ladder small{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}.ar-ladder b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:24px}.ar-ladder span{font-size:12.5px;color:var(--muted)}
+.ar-reps{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:8px}.ar-reps label{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:500;text-transform:none;letter-spacing:0;color:inherit;margin:0}
+.ar-mine{display:flex;flex-direction:column;gap:2px;border-left:4px solid var(--lime)}.ar-mine small{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}.ar-mine b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:20px}.ar-mine span{font-size:13px;color:var(--muted)}
+.st-row.click{cursor:pointer}.st-row.click:hover{background:var(--tint)}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line-2);background:var(--card);font-weight:500;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--lime);border-color:var(--ink);font-weight:700}
@@ -408,12 +413,12 @@ th[aria-sort="ascending"]::after{content:" ▴"}th[aria-sort="descending"]::afte
 
 <script>
 (function(){
-const ALLTABS=[["dash","Dashboard"],["mine","My view"],["goals","Goals"],["sales","Sales"],["team","Reps"],["payout","Payouts"],["comm","Commissions"],["exp","Expenses"],["inc","Incentives"],["pay","Pay plans"]];let TABS=ALLTABS;
+const ALLTABS=[["dash","Dashboard"],["mine","My view"],["goals","Goals"],["sales","Sales"],["team","Reps"],["payout","Payouts"],["comm","Commissions"],["exp","Expenses"],["inc","Incentives"],["pay","Pay plans"],["areas","Areas"],["partners","Partners"]];let TABS=ALLTABS;
 const NAVG={dash:"Overview",sales:"Team",payout:"Money",pay:"Setup"};
 let previewRep=null;const RV=()=>repMode||previewRep;
 const repTabs=id=>[["r_home","Home"],["r_pay","Pay"],["r_pipe","Pipeline"],["r_goals","Goals"],["r_board","Team"]];
 let MYGOAL=0,MYPREF={},MINE_CTX=null,myName="",repMode=null,myUid=null,myEmail=null,CLAIMS=[],linkPick="";
-const COLS=["reps","rates","sales","expenses","incentives","goals"].concat(window.QHQ?["reviews"]:[]);
+const COLS=["reps","rates","sales","expenses","incentives","goals","partners","crews","territories"].concat(window.QHQ?["reviews"]:[]);
 const D={reps:[],rates:[],sales:[],expenses:[],incentives:[],goals:[],reviews:[]};
 const isMgr=()=>!!(window.QHQ&&window.QHQ.me&&window.QHQ.me.role==="manager");
 let db=null,canEdit=true,tab="dash",loaded=0,salesFilter="all",salesStatus="all";
@@ -485,7 +490,7 @@ function totals(R){
 }
 
 /* ---------- views ---------- */
-const ICO={r_home:"M3 11l9-7 9 7v9H3zM9 20v-6h6v6",r_pay:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",r_pipe:"M3 5h18l-7 8v6l-4 2v-8z",r_board:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z",r_goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",r_team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",dash:"M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",sales:"M4 4v16h16M8 15l4-4 3 3 5-6",team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",mine:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6",goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",payout:"M4 5h16v15H4zM4 10h16M8 3v4M16 3v4",comm:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",pay:"M12 3v18M17 7H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H6",exp:"M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",inc:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4"};
+const ICO={r_home:"M3 11l9-7 9 7v9H3zM9 20v-6h6v6",r_pay:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",r_pipe:"M3 5h18l-7 8v6l-4 2v-8z",r_board:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z",r_goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",r_team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",dash:"M4 4h7v7H4zM13 4h7v4h-7zM13 10h7v10h-7zM4 13h7v7H4z",sales:"M4 4v16h16M8 15l4-4 3 3 5-6",team:"M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 20c0-3 3-5 6-5s6 2 6 5M16 5a3 3 0 0 1 0 6M21 20c0-2.5-1.8-4.3-4-4.8",mine:"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6",goals:"M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 12h.01",payout:"M4 5h16v15H4zM4 10h16M8 3v4M16 3v4",comm:"M3 7h18v10H3zM6.5 12h.01M17.5 12h.01M12 14.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",pay:"M12 3v18M17 7H9.5a2.5 2.5 0 0 0 0 5h5a2.5 2.5 0 0 1 0 5H6",exp:"M6 3h12v18l-3-2-3 2-3-2-3 2zM9 8h6M9 12h6",inc:"M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4",areas:"M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",partners:"M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6M9 11h.01M15 11h.01"};
 const THK="qhq-theme";function applyTheme(v){v=v||"auto";if(v==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",v);document.querySelectorAll("[data-theme-set]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.themeSet===v)))}
 let THEME="auto";try{THEME=localStorage.getItem(THK)||"auto"}catch(e){}applyTheme(THEME);
 const MPRI=["dash","sales","payout","team"],MORE_ICO="M5 12h.01M12 12h.01M19 12h.01";
@@ -503,8 +508,9 @@ function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").cont
   {const mm=RV()?rep(RV()):me(),nm=isMgr()?(myEmail||"Manager"):(mm&&mm.name)||"Quota";$("#acctAv").textContent=isMgr()?"M":initials(nm);$("#acctWho").innerHTML=`<b>${esc(nm)}</b><span>${isMgr()?"Manager":RV()?(previewRep?"Previewing rep portal":"Rep"):"Admin"}</span>`;$("#acctOut").hidden=!window.QHQ;applyTheme(THEME)}
   renderTabs();const R=range();$("#vt").textContent=(TABS.find(t=>t[0]===tab)||[])[1]||"";
   const m=RV()?rep(RV()):me();$("#sideFoot").innerHTML=isMgr()?`<b>${esc(myEmail||"Manager")}</b>Manager · review &amp; expenses`:m?`<b>${esc(m.name)}</b>${esc(m.role||"")}${RV()?"":" · "+D.reps.length+" on team"}`:`<b>Set up</b>Add yourself under Reps`;
-  ({r_home:vMine,r_pay:vMine,r_pipe:vMine,r_board:vMine,r_goals:vMine,r_team:vMine,dash:vDash,sales:vSales,team:vTeam,comm:vComm,payout:vPayouts,goals:vGoals,mine:vMine,pay:vPay,exp:vExp,inc:vInc})[tab](R);
+  ({r_home:vMine,r_pay:vMine,r_pipe:vMine,r_board:vMine,r_goals:vMine,r_team:vMine,dash:vDash,sales:vSales,team:vTeam,comm:vComm,payout:vPayouts,goals:vGoals,mine:vMine,pay:vPay,exp:vExp,inc:vInc,areas:vAreas,partners:vPartners})[tab](R);
   if(aid){const el=document.getElementById(aid);if(el){el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos)}catch(e){}}}
+  if(tab==="r_home"){const id=RV();const h=id&&myAreasHtml(id);const g=$("#view .glance");if(h&&g)g.insertAdjacentHTML("afterend",h)}
   if(tab==="team"&&canEdit&&CLAIMS.length)$("#view").insertAdjacentHTML("afterbegin",claimsHtml());
   if(tab==="team"&&canEdit&&window.QHQ)$("#view").insertAdjacentHTML("afterbegin",loginsHtml());
   if(canEdit&&!RV()&&window.QHQ&&(window.QHQ.applicants||[]).length&&(tab==="team"||tab==="dash"))$("#view").insertAdjacentHTML("afterbegin",tab==="team"?recruitsHtml():`<div class="pvbar" style="margin-bottom:0"><b>${window.QHQ.applicants.length} new recruit${window.QHQ.applicants.length>1?"s":""} waiting</b><span>Set their pay scale and approve</span><button class="btn btn-lime btn-sm" type="button" data-tab="team">Review</button></div>`);
@@ -744,6 +750,69 @@ function vExp(R){
   <div class="grid g2"><div class="card"><h3>By category</h3>${ks.length?`<div class="bars">${ks.map(([k,v])=>`<div class="bar-row"><span><b>${esc(k)}</b></span><span>${money(v)}</span><div class="track"><div class="fill ph" style="width:${Math.max(3,v/mx*100)}%"></div></div></div>`).join("")}</div>`:`<div class="empty"><b>No expenses this period</b>Travel, flights, rentals and housing for the crew go here.</div>`}</div>
   <div class="card"><h3>Entries</h3>${l.length?`<div class="tbl"><table><thead><tr><th>Date</th><th>Category</th><th>What it was</th><th>For</th><th>Payout</th><th>Added by</th><th class="num">Amount</th></tr></thead><tbody>${l.map(e=>`<tr class="click" data-edit="expenses" data-id="${e.id}"><td>${fmtD(e.date)}</td><td><span class="pill p-tag">${esc(e.category)}</span></td><td>${esc(e.note)||"—"}</td><td>${e.repId?esc(repName(e.repId)):esc(e.market)||"Whole org"}</td><td>${fmtD(expDay(e))}</td><td>${e.by?esc(String(e.by).split("@")[0]):"Aidan"}</td><td class="num">${money(num(e.amount))}</td></tr>`).join("")}</tbody></table></div>`:`<div class="empty">Nothing logged.</div>`}</div></div>`;
 }
+
+/* ---------- partners, teams, areas ---------- */
+const AST={available:["Available","p-done"],blitzing:["Blitzing","p-you"],reserved:["Reserved","p-pend"],requested:["Requested","p-pend"],cooldown:["Cool down","p-tag"],inactive:["Inactive","p-cx"]};
+const PTYPES=["Master dealer / platform","ISP direct","Marketing company","Dealer / team"];
+const hav=(a,b)=>{if(!a||!b||!a.lat||!b.lat)return null;const R=3959,r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dn=r(b.lng-a.lng),h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;return Math.round(2*R*Math.asin(Math.sqrt(h)))};
+const crewReps=c=>c?D.reps.filter(r=>(r.team||"")===c.name&&!/fail|inactive|quit|termin/i.test(r.status||"")):[];
+const areaReps=t=>{const s=new Set(t.repIds||[]);if(t.crewId)crewReps((D.crews||[]).find(c=>c.id===t.crewId)).forEach(r=>s.add(r.id));return[...s]};
+const assigned=t=>!!(t.crewId||(t.repIds||[]).length);
+const liveA=t=>assigned(t)&&(!t.end||t.end>=today());
+const addD=(d,n)=>{const x=pd(d);x.setDate(x.getDate()+n);return ymd(x)};
+function areaStats(t){const ids=new Set(areaReps(t)),st=t.start||"0000",en=t.end&&t.end<today()?t.end:today(),isp=(t.isp||"").toLowerCase().split(/[\/ ]/)[0];
+  const l=D.sales.filter(s=>ids.has(s.repId)&&(s.date||"")>=st&&(s.date||"")<=en&&(!isp||(s.provider||"").toLowerCase().includes(isp))&&s.type!=="phone");
+  const days=Math.max(1,Math.round((pd(en)-pd(st))/864e5)+1),wk=l.filter(s=>s.date>addD(en,-7)).length,prior=l.filter(s=>s.date<=addD(en,-7)&&s.date>addD(en,-14)).length;
+  return{sold:l.filter(s=>s.status!=="cancelled").length,inst:l.filter(s=>s.status==="done").length,days,reps:ids.size,perRepDay:ids.size?l.filter(s=>s.status!=="cancelled").length/ids.size/days:0,wk,prior}}
+function rotCue(t,a){if(a.days>=98)return["Past 14 weeks. Rotate out","p-cx"];if(a.days>=14&&a.prior>=4&&a.wk<a.prior*0.6)return["Sales down "+Math.round((1-a.wk/a.prior)*100)+"% vs last week. Plan next area","p-pend"];if(a.days>=28)return["4+ weeks in. Line up the next area","p-pend"];return["On track","p-done"]}
+function fitScore(t,base){let s=Math.sqrt(Math.min(t.leads||0,15000))/10;if(t.rested>=60)s+=3;else if(t.rested>=30)s+=1;else if(t.rested!=null&&t.rested<14)s-=2;if(t.tag==="🔥")s+=0.5;const d=hav(base,t);if(d!=null)s-=d/250;return s}
+function areaTags(t){const o=[];if(t.rested>=60)o.push(`<span class="pill p-done" title="Not worked in 60+ days">Rested ${t.rested}d</span>`);else if(t.rested!=null)o.push(`<span class="pill p-tag">Rested ${t.rested}d</span>`);if(t.tag==="🔥")o.push(`<span class="pill p-tag" title="Popular in The League">🔥 Popular</span>`);if(t.askMills)o.push(`<span class="pill p-pend" title="The League wants you to check with them first">Ask League first</span>`);if(t.offer)o.push(`<span class="pill p-tag">${esc(t.offer)}</span>`);return o.join(" ")}
+function vAreas(){const A=ST.ar=ST.ar||{q:"",isp:"",st:"available",state:"",sort:"fit",n:40};const T=D.territories||[];
+  const live=T.filter(liveA),base=A.base?T.find(t=>t.id===A.base):live[0];
+  const cnt={};T.forEach(t=>{cnt[t.lstatus]=(cnt[t.lstatus]||0)+1});
+  const isps=[...new Set(T.map(t=>t.isp))].sort(),states=[...new Set(T.map(t=>(t.city.split(",").pop()||"").trim().toUpperCase()))].filter(Boolean).sort();
+  let l=T.filter(t=>(!A.st||t.lstatus===A.st)&&(!A.isp||t.isp===A.isp)&&(!A.state||t.city.toUpperCase().endsWith(A.state))&&(!A.q||(t.city+" "+t.isp).toLowerCase().includes(A.q.toLowerCase())));
+  l.forEach(t=>{t._d=hav(base,t);t._f=fitScore(t,base)});
+  const so={fit:(a,b)=>b._f-a._f,leads:(a,b)=>b.leads-a.leads,near:(a,b)=>(a._d??1e9)-(b._d??1e9),rested:(a,b)=>(b.rested??-1)-(a.rested??-1)}[A.sort];l.sort(so);
+  const synced=T.map(t=>t.syncedAt||"").sort().pop();
+  const tile=(k,lab)=>`<button type="button" class="kpi ar-k ${A.st===k?"on":""}" data-arst="${k}"><div class="l">${lab}</div><div class="v">${cnt[k]||0}</div></button>`;
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Areas</h2><p class="sub">${T.length} areas from The League${synced?" · synced "+fmtD(synced.slice(0,10)):""}. Request or reserve areas in The League. Here you place teams and track how each area produces.</p></div>${canEdit?`<button class="btn btn-ink" data-add="territories">+ Add area</button>`:""}</div>
+  <div class="card"><h3>Working now</h3>${live.length?`<div class="st-list">${live.map(t=>{const a=areaStats(t),c=(D.crews||[]).find(x=>x.id===t.crewId),cue=rotCue(t,a),who=[c?c.name:"",...(t.repIds||[]).filter(id=>!c||!crewReps(c).some(r=>r.id===id)).map(repName)].filter(Boolean).join(" + ");
+    return`<div class="st-row click" data-edit="territories" data-id="${t.id}"><div><b>${esc(t.city)} <span class="pill p-tag">${esc(t.isp)}</span></b><span>${esc(who)} · ${a.reps} rep${a.reps===1?"":"s"} · ${t.start?fmtD(t.start):"?"} to ${t.end?fmtD(t.end):"open"} · day ${a.days}</span><span style="display:block;margin-top:4px"><span class="pill ${cue[1]}">${cue[0]}</span></span></div><div style="text-align:right"><b>${a.sold} sold · ${a.inst} in</b><span>${a.perRepDay.toFixed(2)} sales / rep / day</span></div></div>`}).join("")}</div>`:`<div class="empty"><b>No teams placed yet</b>Pick an area below and assign a team or reps.</div>`}</div>
+  <div class="kpis ar-ks" style="margin:16px 0">${tile("available","Available")}${tile("blitzing","Blitzing")}${tile("reserved","Reserved")}${tile("cooldown","Cool down")}</div>
+  <div class="card"><div class="toolbar" style="margin-bottom:12px"><div class="search" style="display:block!important"><svg viewBox="0 0 24 24"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3"/></svg><input id="arq" data-ar="q" placeholder="Search city or ISP" style="padding-left:34px" value="${esc(A.q)}" aria-label="Search areas"></div>
+   <select id="arisp" data-ar="isp" aria-label="ISP"><option value="">All ISPs</option>${opts(isps,A.isp)}</select>
+   <select id="arstate" data-ar="state" aria-label="State"><option value="">All states</option>${opts(states,A.state)}</select>
+   <select id="arstt" data-ar="st" aria-label="Status"><option value="">Any status</option>${opts(Object.entries(AST).map(([k,v])=>[k,v[0]]),A.st)}</select>
+   <select id="arsort" data-ar="sort" aria-label="Sort"><option value="fit" ${A.sort==="fit"?"selected":""}>Best fit</option><option value="leads" ${A.sort==="leads"?"selected":""}>Most leads</option><option value="near" ${A.sort==="near"?"selected":""}>Closest</option><option value="rested" ${A.sort==="rested"?"selected":""}>Most rested</option></select>
+   ${T.length?`<select id="arbase" data-ar="base" aria-label="Distance from"><option value="">Miles from ${base?esc(base.city):"…"}</option>${opts(live.concat(T.filter(t=>!liveA(t)).slice(0,0)).map(t=>[t.id,"Miles from "+t.city]),A.base||"")}</select>`:""}</div>
+   <p class="sub" style="margin:0 0 10px">${l.length} areas · Best fit weighs size, time since last worked (60+ days is best) and distance from your current blitz.</p>
+   ${l.length?`<div class="st-list">${l.slice(0,A.n).map(t=>{const s=AST[t.lstatus]||[t.lstatus,"p-tag"],room=Math.max(1,Math.round((t.leads||0)/1500));
+    return`<div class="st-row click" data-edit="territories" data-id="${t.id}"><div><b>${esc(t.city)} <span class="pill p-tag">${esc(t.isp)}</span> <span class="pill ${s[1]}">${s[0]}</span>${liveA(t)?' <span class="pill p-you">Your team</span>':""}</b><span>${(t.leads||0).toLocaleString()} leads · room for ~${room} rep${room>1?"s":""}${t._d!=null?" · "+t._d+" mi":""}</span><span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${areaTags(t)}</span></div>${canEdit?`<span class="btn btn-out btn-sm">${assigned(t)?"Edit":"Assign"}</span>`:""}</div>`}).join("")}</div>${l.length>A.n?`<button class="btn btn-out" type="button" data-armore="1" style="margin-top:12px;width:100%">Show ${Math.min(40,l.length-A.n)} more</button>`:""}`:`<div class="empty"><b>No areas match</b>Clear a filter to see more.</div>`}</div>`;
+}
+function crewStats(c){const ids=new Set(crewReps(c).map(r=>r.id)),mm=me(),my=mm&&mm.id,t=today(),c28=addD(t,-28),c7=addD(t,-7);
+  const l=D.sales.filter(s=>ids.has(s.repId)&&s.status!=="cancelled"),act=new Set(l.filter(s=>s.date>c28).map(s=>s.repId)).size,i28=l.filter(s=>s.status==="done"&&doneDate(s)>c28);
+  const ov=x=>x.reduce((a,s)=>a+(s.repId===my?0:((s.ovr&&s.ovr[my])||0)*qty(s)),0);
+  return{reps:ids.size,act,s7:l.filter(s=>s.date>c7).length,i28:i28.reduce((a,s)=>a+qty(s),0),ov28:ov(i28),perRepWk:act?i28.length/act/4:0}}
+function vPartners(){const P=D.partners||[],C=D.crews||[],t=today();
+  const cs=C.map(c=>({c,a:crewStats(c)})),ov28=cs.reduce((a,x)=>a+x.a.ov28,0),i28=cs.reduce((a,x)=>a+x.a.i28,0),perWk=ov28/4,cut=i28?ov28/i28:50;
+  const lad=[1000,2000,3000,5000,10000,20000],nxt=lad.find(x=>x>perWk)||lad[lad.length-1];
+  $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Partners</h2><p class="sub">Who you sell through, the teams you place with them, and what each team earns you.</p></div>${canEdit?`<span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-out" data-add="partners">+ Partner</button><button class="btn btn-ink" data-add="crews">+ Team</button></span>`:""}</div>
+  <div class="card"><h3>Override profit per week</h3><p class="sub" style="margin:0 0 12px">Last 4 weeks of installs from every team below. Same cut as now: your scale overrides.</p>
+   <div class="ar-ladder"><div><small>Now</small><b>${money(perWk)}</b><span>/ week</span></div><div><small>Your cut</small><b>${money(cut)}</b><span>per install${i28?"":" (est.)"}</span></div><div><small>Next goal</small><b>${money(nxt)}</b><span>${Math.max(0,Math.ceil((nxt-perWk)/cut))} more installs / wk</span></div></div>
+   <div class="track" style="margin:12px 0 4px"><div class="fill" style="width:${Math.min(100,perWk/nxt*100)}%"></div></div>
+   <div class="tbl" style="margin-top:12px"><table><thead><tr><th>Weekly goal</th><th class="num">Installs / wk</th><th class="num">Producing reps</th></tr></thead><tbody>${lad.map(g=>{const n=Math.ceil(g/cut);return`<tr ${g===nxt?'style="font-weight:700"':""}><td>${money(g)}${perWk>=g?' <span class="pill p-done">Hit</span>':""}</td><td class="num">${n}</td><td class="num">${Math.ceil(n/3)}</td></tr>`}).join("")}</tbody></table></div>
+   <p class="sub" style="margin:8px 0 0">Producing rep = 3 installs a week, a solid D2D fiber pace. A team that holds 2+ installs per rep per week is worth keeping.</p></div>
+  <h3 style="margin:22px 0 10px">Teams</h3>${cs.length?`<div class="grid g2">${cs.map(({c,a})=>{const p=P.find(x=>x.id===c.partnerId),ar=(D.territories||[]).filter(x=>liveA(x)&&(x.crewId===c.id)),pace=a.perRepWk>=3?["Producing","p-done"]:a.perRepWk>=2?["Solid","p-done"]:a.perRepWk>=1?["Building","p-pend"]:["Not producing yet","p-cx"];
+    return`<div class="card click" data-edit="crews" data-id="${c.id}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:start"><div><h3 style="margin:0">${esc(c.name)}</h3><p class="sub" style="margin:2px 0 0">${esc(c.kind||"In-house")} · led by ${esc(repName(c.leaderId))}${p?" · "+esc(p.name):""}</p></div><span class="pill ${pace[1]}">${pace[0]}</span></div>
+     <div class="kpis" style="margin-top:12px">${kpi("Reps",a.reps||num(c.headcount)||0,a.act+" selling")}${kpi("Installs / rep / wk",a.perRepWk.toFixed(1),"selling reps, 4 wks")}${kpi("Your override",money(a.ov28/4),"per week")}</div>
+     <p class="sub" style="margin:10px 0 0">${ar.length?"Working "+ar.map(x=>esc(x.city)).join(", "):"No area assigned"} · ${a.s7} sales this week</p></div>`}).join("")}</div>`:`<div class="empty"><b>No teams yet</b>Add your own crews and outside teams you recruit.</div>`}
+  <h3 style="margin:22px 0 10px">Partners</h3><div class="grid g2">${P.map(p=>{const cr=C.filter(c=>c.partnerId===p.id),ta=(D.territories||[]).filter(x=>x.partnerId===p.id),av=ta.filter(x=>x.lstatus==="available").length;
+    return`<div class="card click" data-edit="partners" data-id="${p.id}"><div style="display:flex;justify-content:space-between;gap:8px"><h3 style="margin:0">${esc(p.name)}</h3><span class="pill ${p.status==="Active"?"p-done":"p-tag"}">${esc(p.status||"")}</span></div><p class="sub" style="margin:2px 0 10px"><b>${esc(p.type||"")}</b>${p.isps?" · "+esc(p.isps):""}</p>
+     <div class="kpis">${kpi("Teams placed",cr.length)}${kpi("Areas",ta.length,av+" available")}</div>${p.terms?`<p class="sub" style="margin:10px 0 0">${esc(p.terms)}</p>`:""}</div>`}).join("")||`<div class="empty"><b>No partners yet</b></div>`}</div>`;
+}
+function myAreasHtml(id){const l=(D.territories||[]).filter(t=>liveA(t)&&areaReps(t).includes(id));if(!l.length)return"";
+  return`<div class="card ar-mine" style="margin-bottom:12px"><small>Your area</small>${l.map(t=>`<b>${esc(t.city)}</b><span>${esc(t.isp)} · ${t.start?fmtD(t.start):""}${t.end?" to "+fmtD(t.end):""}${t.aNote?" · "+esc(t.aNote):""}</span>`).join("")}</div>`}
 
 function vInc(){
   const l=[...D.incentives].sort((a,b)=>(b.end||"").localeCompare(a.end||""));const t=today();
@@ -1201,6 +1270,31 @@ const F=(id,label,inner,cls,hint)=>`<div class="fld ${cls||""}"><label for="f_${
 const inp=(id,v,type,extra)=>`<input id="f_${id}" name="${id}" type="${type||"text"}" value="${esc(v??"")}" ${extra||""}>`;
 
 const FORMS={
+ partners:{t:"Partner",body:p=>`${F("name","Name",inp("name",p.name,"text",'required placeholder="The League (VTRS)"'),"full")}
+  ${F("type","Type",`<select id="f_type" name="type">${opts(PTYPES,p.type||PTYPES[0])}</select>`,"","Master dealer: you sell under their carrier contracts. ISP direct: your own contract with the ISP. Marketing company: another D2D org you place teams with.")}
+  ${F("status","Status",`<select id="f_status" name="status">${opts(["Active","Talking","Paused"],p.status||"Active")}</select>`)}
+  ${F("isps","ISPs / products",inp("isps",p.isps,"text",'placeholder="Kinetic, Brightspeed, AT&T"'),"full")}
+  ${F("terms","Pay terms",inp("terms",p.terms,"text",'placeholder="Rate sheet, pay timing, chargebacks"'),"full")}
+  ${F("contact","Contact",inp("contact",p.contact,"text"),"full")}
+  ${F("notes","Notes",inp("notes",p.notes,"text"),"full")}`},
+ crews:{t:"Team",body:c=>`${F("name","Team name",inp("name",c.name,"text",'required placeholder="Team Quota"'),"full","Reps whose Team field matches this name count toward it")}
+  ${F("kind","Kind",`<select id="f_kind" name="kind">${opts(["In-house","Recruited team"],c.kind||"In-house")}</select>`)}
+  ${F("status","Status",`<select id="f_status" name="status">${opts(["Prospect","Trial","Active","Paused"],c.status||"Prospect")}</select>`,"","Trial: 2 to 4 weeks to prove 2+ installs per rep per week")}
+  ${F("leaderId","Leader",`<select id="f_leaderId" name="leaderId">${repOpts("No leader yet")}</select>`)}
+  ${F("partnerId","Placed with",`<select id="f_partnerId" name="partnerId"><option value="">Not placed</option>${(D.partners||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select>`)}
+  ${F("headcount","Headcount (before they join)",inp("headcount",c.headcount,"number",'min="0" step="1"'))}
+  ${F("contact","Contact",inp("contact",c.contact,"text",'placeholder="Leader phone or email"'))}
+  ${F("notes","Notes",inp("notes",c.notes,"text",'placeholder="Where they sold before, last 4 weeks of installs"'),"full")}`,
+  sel:c=>({leaderId:c.leaderId||"",partnerId:c.partnerId||""}),num:["headcount"]},
+ territories:{t:"Area",body:t=>`${t.src==="league"?`<div class="fld full"><label>Area</label><p class="sub" style="margin:0"><b>${esc(t.city)}</b> · ${esc(t.isp)} · ${(t.leads||0).toLocaleString()} leads · ${esc((AST[t.lstatus]||[t.lstatus])[0])} in The League</p><small>League details are read-only.</small>${t.lstatus==="available"&&!assigned(t)?`<div class="todo" style="margin-top:8px"><b>Request it in The League first</b><span>This area is open, not yours yet. Request or reserve it in The League, then assign your team here once it's approved.</span></div>`:""}</div>`:`${F("city","City, ST",inp("city",t.city,"text",'required placeholder="Greenville, NC"'),"full")}
+  ${F("isp","ISP",inp("isp",t.isp,"text",'required'))}${F("leads","Leads / homes",inp("leads",t.leads,"number",'min="0"'))}
+  ${F("partnerId","Partner",`<select id="f_partnerId" name="partnerId">${(D.partners||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join("")}</select>`)}
+  ${F("lstatus","Status",`<select id="f_lstatus" name="lstatus">${opts(Object.entries(AST).map(([k,v])=>[k,v[0]]),t.lstatus||"available")}</select>`)}`}
+  ${F("crewId","Team",`<select id="f_crewId" name="crewId"><option value="">No team</option>${(D.crews||[]).map(c=>`<option value="${c.id}">${esc(c.name)} (${crewReps(c).length})</option>`).join("")}</select>`,"full","The whole team works it. Add individual reps below too")}
+  <div class="fld full"><label>Individual reps</label><div class="ar-reps">${D.reps.filter(r=>!/fail/i.test(r.status||"")&&r.team!=="Team Six").map(r=>`<label><input type="checkbox" name="r_${r.id}" ${(t.repIds||[]).includes(r.id)?"checked":""}> ${esc(r.name)}</label>`).join("")}</div></div>
+  ${F("start","Start",inp("start",t.start||today(),"date"))}${F("end","End",inp("end",t.end||"","date"),"","Typical blitz is 2 to 3 weeks")}
+  ${F("aNote","Note for reps",inp("aNote",t.aNote,"text",'placeholder="Meet 9am at the Hampton Inn, start north of US-17"'),"full")}`,
+  sel:t=>({crewId:t.crewId||"",partnerId:t.partnerId||"league"}),num:["leads"]},
  reps:{t:"Team member",body:r=>`${F("name","Name",inp("name",r.name,"text","required"),"full")}
   ${F("role","Role",`<select id="f_role" name="role">${opts(ROLES,r.role||"Rep")}</select>`)}
   ${F("managerId","Reports to",`<select id="f_managerId" name="managerId">${repOpts("No one (top of the tree)")}</select>`)}
@@ -1289,7 +1383,7 @@ function openForm(col,id,preset){
   if(isMgr()&&id){const ex=D.expenses.find(x=>x.id===id);if(ex&&window.QHQ.me&&ex.by!==window.QHQ.me.email){toast("Only the person who added this expense can change it");return}}
   const spec=FORMS[col],rec=id?(D[col].find(x=>x.id===id)||{}):(preset||{}),isNew=!id;
   $("#sheetRoot").innerHTML=`<div class="sheet-back" id="sb"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh"><div class="sheet-h"><h2 id="sh">${isNew?"New":"Edit"} ${spec.t.toLowerCase()}</h2><button class="x" type="button" id="sx" aria-label="Close">×</button></div>
-  <form class="f" id="ff" novalidate>${spec.body(rec)}<div class="acts">${isNew?"":`<button type="button" class="btn btn-bad sp" id="del">Delete</button>`}<button type="button" class="btn btn-out" id="cancel">Cancel</button><button class="btn btn-lime" type="submit">${isNew?"Save":"Save changes"}</button></div></form></div></div>`;
+  <form class="f" id="ff" novalidate>${spec.body(rec)}<div class="acts">${isNew||rec.src==="league"?"":`<button type="button" class="btn btn-bad sp" id="del">Delete</button>`}<button type="button" class="btn btn-out" id="cancel">Cancel</button><button class="btn btn-lime" type="submit">${isNew?"Save":"Save changes"}</button></div></form></div></div>`;
   const form=$("#ff");const sel=spec.sel?spec.sel(rec):{};for(const k in sel)if(form.elements[k])form.elements[k].value=sel[k];
   if(spec.hook)spec.hook(form,isNew);
   const back=repOpen;repOpen=null;
@@ -1305,6 +1399,7 @@ function openForm(col,id,preset){
     const bad=[...form.querySelectorAll("[required]")].find(x=>!String(x.value).trim());if(bad){bad.focus();toast("Fill in "+(form.querySelector(`label[for="${bad.id}"]`)||{}).textContent);return}
     const data={};[...form.elements].forEach(el=>{if(!el.name)return;data[el.name]=el.type==="checkbox"?el.checked:el.value.trim()});
     (spec.num||[]).forEach(k=>{if(k in data)data[k]=num(data[k])});
+    if(col==="territories"){data.repIds=Object.keys(data).filter(k=>k.startsWith("r_")&&data[k]).map(k=>k.slice(2));Object.keys(data).filter(k=>k.startsWith("r_")).forEach(k=>delete data[k]);if(data.end&&data.start&&data.end<data.start){toast("End date is before the start");return}}
     if(col==="reps"){if(data.managerId===id)data.managerId="";if(id&&data.managerId&&downline(id).includes(data.managerId)){toast("That would put them under their own team");return}}
     if(col==="incentives"&&data.end<data.start){toast("End date is before the start");return}
     data.updatedAt=new Date().toISOString();
@@ -1322,11 +1417,13 @@ function errMsg(e){const c=e&&e.code;if(c==="invalid_argument")return"Couldn't s
 let tt;function toast(m){clearTimeout(tt);let el=$(".toast");if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el)}el.textContent=m;tt=setTimeout(()=>el.remove(),2400)}
 
 /* ---------- events ---------- */
+document.addEventListener("input",e=>{const k=e.target.dataset&&e.target.dataset.ar;if(!k||!ST.ar)return;ST.ar[k]=e.target.value;ST.ar.n=40;if(k==="q"){clearTimeout(window.__arq);window.__arq=setTimeout(render,180)}else render()});
 document.addEventListener("click",e=>{
   const cb=e.target.closest("[data-sel],[data-selall]");
   if(cb){if(cb.hasAttribute("data-selall")){if(cb.checked)salesList(range()).forEach(s=>selS.add(s.id));else selS.clear()}else{cb.checked?selS.add(cb.dataset.sel):selS.delete(cb.dataset.sel)}render();return}
   if(!e.target.closest(".search"))$("#gres").hidden=true;
   const pvb=e.target.closest("[data-pv],[data-pvexit]");if(pvb&&pvb.tagName==="BUTTON"){if(pvb.dataset.pvexit){previewRep=null;tab="mine"}else{previewRep=pvb.dataset.pv;tab="r_home"}window.scrollTo(0,0);render();return}
+  const arb=e.target.closest("[data-arst],[data-armore]");if(arb){const A=ST.ar;if(arb.dataset.armore)A.n+=40;else{A.st=A.st===arb.dataset.arst?"":arb.dataset.arst;A.n=40}render();return}
   const rvb=e.target.closest("[data-review]");
   if(rvb){db.collection("reviews").doc(rvb.dataset.k).set({status:rvb.dataset.review,note:(($("#rvnote")||{}).value||"").trim()}).then(()=>toast(rvb.dataset.review==="ok"?"Marked reviewed":"Flagged for Aidan")).catch(err=>toast(err.message||"Couldn't save"));return}
   const gb=e.target.closest("[data-gtype],[data-gset],[data-gedit]");
