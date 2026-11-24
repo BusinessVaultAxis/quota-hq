@@ -5,8 +5,9 @@
     if(r.status===401){location.href="/login";throw new Error("signed out")}const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||"Request failed");e.code=r.status;throw e}return j};
   const snap=c=>({docs:((state.data&&state.data[c])||[]).map(d=>({id:d.id,data:()=>{const o=Object.assign({},d);delete o.id;return o}}))});
   const emit=()=>{for(const c in subs)subs[c].forEach(cb=>{try{cb(snap(c))}catch(e){console.error(e)}})};
-  async function load(){try{state.data=await api("GET","/api/data");window.QHQ.me=state.data._me;window.QHQ.pre=!!state.data._pre;window.QHQ.repGoals=state.data._repGoals||null;if(state.data._me.role==="admin")await Promise.all([window.QHQ.loadApplicants(),window.QHQ.loadUsers()]);emit()}catch(e){console.error(e)}}
-  const after=async r=>{await load();return r};
+  let last="";
+  async function load(force){try{const nd=await api("GET","/api/data"),sig=JSON.stringify(nd);if(!force&&sig===last&&state.data)return;last=sig;state.data=nd;window.QHQ.me=state.data._me;window.QHQ.pre=!!state.data._pre;window.QHQ.repGoals=state.data._repGoals||null;if(state.data._me.role==="admin")await Promise.all([window.QHQ.loadApplicants(),window.QHQ.loadUsers()]);emit()}catch(e){console.error(e)}}
+  const after=async r=>{await load(true);return r};
   const col=c=>({
     onSnapshot(cb){(subs[c]=subs[c]||[]).push(cb);if(state.data)setTimeout(()=>cb(snap(c)),0);return()=>{subs[c]=subs[c].filter(x=>x!==cb)}},
     add:data=>api("POST","/api/doc/"+c,data).then(r=>after({id:r.id})),
@@ -498,7 +499,8 @@ function renderTabs(){const many=TABS.length>6,inMore=many&&!MPRI.includes(tab);
   $("#tabs").innerHTML=TABS.map(([k,l])=>(!RV()&&NAVG[k]?`<p class="nav-g" role="presentation">${NAVG[k]}</p>`:"")+`<button role="tab" type="button" class="${many&&!MPRI.includes(k)?"m-hide":""}" data-tab="${k}" aria-selected="${k===tab}" aria-label="${l}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICO[k]}"/></svg><span>${l}</span></button>`).join("")+(many?`<button type="button" class="more-only" data-more="1" aria-selected="${inMore}" aria-label="More sections"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${MORE_ICO}" stroke-width="3"/></svg><span>${inMore?(TABS.find(t=>t[0]===tab)||[])[1]:"More"}</span></button>`:"")}
 function openMore(){closeMore();const L=TABS.filter(t=>!MPRI.includes(t[0]));document.body.insertAdjacentHTML("beforeend",`<div class="more-bg" data-moreclose="1"></div><div class="more-sheet" role="dialog" aria-label="More sections"><h3>More</h3><div class="ms-grid">${L.map(([k,l])=>`<button type="button" data-tab="${k}" data-moreclose="1" ${k===tab?'aria-current="page"':""}>${l}</button>`).join("")}</div></div>`)}
 function closeMore(){document.querySelectorAll(".more-bg,.more-sheet").forEach(x=>x.remove())}
-function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").contains(ae)?ae.id:null;let pos=null;try{pos=ae.selectionStart}catch(e){}
+function render(){const sy=window.scrollY,stab=tab;try{renderInner()}finally{if(tab===stab&&Math.abs(window.scrollY-sy)>2)window.scrollTo(0,sy)}}
+function renderInner(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").contains(ae)?ae.id:null;let pos=null;try{pos=ae.selectionStart}catch(e){}
   if(isMgr()){TABS=ALLTABS.filter(t=>t[0]!=="mine");if(!window.__mgrInit){window.__mgrInit=1;tab="payout"}if(tab==="mine"||tab.startsWith("r_"))tab="payout"}
   if(!canEdit&&!isMgr()){const r=D.reps.find(x=>(myUid&&x.userId===myUid)||(myEmail&&x.email&&x.email.trim().toLowerCase()===myEmail));repMode=r?r.id:null;ST.m.id=repMode;
     document.body.classList.add("repv");if(repMode){TABS=repTabs(repMode);if(!TABS.some(x=>x[0]===tab))tab="r_home"}if(!repMode){renderTabs();$("#vt").textContent="Link your login";$("#sideFoot").innerHTML="";$("#view").innerHTML=linkHtml();return}}
@@ -509,7 +511,7 @@ function render(){const ae=document.activeElement,aid=ae&&ae.id&&$("#view").cont
   renderTabs();const R=range();$("#vt").textContent=(TABS.find(t=>t[0]===tab)||[])[1]||"";
   const m=RV()?rep(RV()):me();$("#sideFoot").innerHTML=isMgr()?`<b>${esc(myEmail||"Manager")}</b>Manager · review &amp; expenses`:m?`<b>${esc(m.name)}</b>${esc(m.role||"")}${RV()?"":" · "+D.reps.length+" on team"}`:`<b>Set up</b>Add yourself under Reps`;
   ({r_home:vMine,r_pay:vMine,r_pipe:vMine,r_board:vMine,r_goals:vMine,r_team:vMine,dash:vDash,sales:vSales,team:vTeam,comm:vComm,payout:vPayouts,goals:vGoals,mine:vMine,pay:vPay,exp:vExp,inc:vInc,areas:vAreas,partners:vPartners})[tab](R);
-  if(aid){const el=document.getElementById(aid);if(el){el.focus();try{if(pos!=null)el.setSelectionRange(pos,pos)}catch(e){}}}
+  if(aid){const el=document.getElementById(aid);if(el){el.focus({preventScroll:true});try{if(pos!=null)el.setSelectionRange(pos,pos)}catch(e){}}}
   if(tab==="r_home"){const id=RV();const h=id&&myAreasHtml(id);const g=$("#view .glance");if(h&&g)g.insertAdjacentHTML("afterend",h)}
   if(tab==="team"&&canEdit&&CLAIMS.length)$("#view").insertAdjacentHTML("afterbegin",claimsHtml());
   if(tab==="team"&&canEdit&&window.QHQ)$("#view").insertAdjacentHTML("afterbegin",loginsHtml());

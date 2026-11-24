@@ -5,8 +5,9 @@
     if(r.status===401){location.href="/login";throw new Error("signed out")}const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||"Request failed");e.code=r.status;throw e}return j};
   const snap=c=>({docs:((state.data&&state.data[c])||[]).map(d=>({id:d.id,data:()=>{const o=Object.assign({},d);delete o.id;return o}}))});
   const emit=()=>{for(const c in subs)subs[c].forEach(cb=>{try{cb(snap(c))}catch(e){console.error(e)}})};
-  async function load(){try{state.data=await api("GET","/api/data");window.QHQ.me=state.data._me;window.QHQ.pre=!!state.data._pre;window.QHQ.repGoals=state.data._repGoals||null;if(state.data._me.role==="admin")await Promise.all([window.QHQ.loadApplicants(),window.QHQ.loadUsers()]);emit()}catch(e){console.error(e)}}
-  const after=async r=>{await load();return r};
+  let last="";
+  async function load(force){try{const nd=await api("GET","/api/data"),sig=JSON.stringify(nd);if(!force&&sig===last&&state.data)return;last=sig;state.data=nd;window.QHQ.me=state.data._me;window.QHQ.pre=!!state.data._pre;window.QHQ.repGoals=state.data._repGoals||null;if(state.data._me.role==="admin")await Promise.all([window.QHQ.loadApplicants(),window.QHQ.loadUsers()]);emit()}catch(e){console.error(e)}}
+  const after=async r=>{await load(true);return r};
   const col=c=>({
     onSnapshot(cb){(subs[c]=subs[c]||[]).push(cb);if(state.data)setTimeout(()=>cb(snap(c)),0);return()=>{subs[c]=subs[c].filter(x=>x!==cb)}},
     add:data=>api("POST","/api/doc/"+c,data).then(r=>after({id:r.id})),
