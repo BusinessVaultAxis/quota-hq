@@ -775,13 +775,13 @@ const areaMatch=(t,q)=>{const h=areaHay(t),st=(t.city.split(",").pop()||"").trim
   if(full.length&&!full.some(([k])=>k===st))return false;
   return rest.split(/[\s,]+/).filter(Boolean).every(w=>w.length===2&&STN[w.toUpperCase()]?w.toUpperCase()===st:h.includes(w))};
 const areaHay=t=>{if(t._h)return t._h;const st=(t.city.split(",").pop()||"").trim().toUpperCase();return t._h=(t.city+" "+t.isp+" "+st+" "+(STN[st]||"")).toLowerCase()};
-function vAreas(){const A=ST.ar=ST.ar||{q:"",isp:"",st:"available",state:"",sort:"fit",n:40};const T=D.territories||[];
+function vAreas(){const A=ST.ar=ST.ar||{q:"",isp:"",st:"",state:"",sort:"fit",n:40};const T=D.territories||[];
   const live=T.filter(liveA),base=A.base?T.find(t=>t.id===A.base):live[0];
   const cnt={};T.forEach(t=>{cnt[t.lstatus]=(cnt[t.lstatus]||0)+1});
   const isps=[...new Set(T.map(t=>t.isp))].sort(),states=[...new Set(T.map(t=>(t.city.split(",").pop()||"").trim().toUpperCase()))].filter(Boolean).sort();
   let l=T.filter(t=>(!A.st||t.lstatus===A.st)&&(!A.isp||t.isp===A.isp)&&(!A.state||t.city.toUpperCase().endsWith(A.state))&&(!A.q||areaMatch(t,A.q)));
   l.forEach(t=>{t._d=hav(base,t);t._f=fitScore(t,base)});
-  const so={fit:(a,b)=>b._f-a._f,leads:(a,b)=>b.leads-a.leads,near:(a,b)=>(a._d??1e9)-(b._d??1e9),rested:(a,b)=>(b.rested??-1)-(a.rested??-1)}[A.sort];l.sort(so);
+  const so={fit:(a,b)=>b._f-a._f,leads:(a,b)=>b.leads-a.leads,near:(a,b)=>(a._d??1e9)-(b._d??1e9),rested:(a,b)=>(b.rested??-1)-(a.rested??-1)}[A.sort];const GRP={available:0,requested:1,reserved:1,blitzing:2,cooldown:3,inactive:4};l.sort((a,b)=>(GRP[a.lstatus]??5)-(GRP[b.lstatus]??5)||so(a,b));
   const synced=T.map(t=>t.syncedAt||"").sort().pop();
   const tile=(k,lab)=>`<button type="button" class="kpi ar-k ${A.st===k?"on":""}" data-arst="${k}"><div class="l">${lab}</div><div class="v">${cnt[k]||0}</div></button>`;
   $("#view").innerHTML=roBanner()+`<div class="sec-h"><div><h2>Areas</h2><p class="sub">${T.length} areas from The League${synced?" · synced "+fmtD(synced.slice(0,10)):""}. Request or reserve areas in The League. Here you place teams and track how each area produces.</p></div>${canEdit?`<button class="btn btn-ink" data-add="territories">+ Add area</button>`:""}</div>
@@ -794,7 +794,7 @@ function vAreas(){const A=ST.ar=ST.ar||{q:"",isp:"",st:"available",state:"",sort
    <select id="arstt" data-ar="st" aria-label="Status"><option value="">Any status</option>${opts(Object.entries(AST).map(([k,v])=>[k,v[0]]),A.st)}</select>
    <select id="arsort" data-ar="sort" aria-label="Sort"><option value="fit" ${A.sort==="fit"?"selected":""}>Best fit</option><option value="leads" ${A.sort==="leads"?"selected":""}>Most leads</option><option value="near" ${A.sort==="near"?"selected":""}>Closest</option><option value="rested" ${A.sort==="rested"?"selected":""}>Most rested</option></select>
    ${T.length?`<select id="arbase" data-ar="base" aria-label="Distance from"><option value="">Miles from ${base?esc(base.city):"…"}</option>${opts(live.concat(T.filter(t=>!liveA(t)).slice(0,0)).map(t=>[t.id,"Miles from "+t.city]),A.base||"")}</select>`:""}</div>
-   <p class="sub" style="margin:0 0 10px">${l.length} areas · Best fit weighs size, time since last worked (60+ days is best) and distance from your current blitz.</p>
+   <p class="sub" style="margin:0 0 10px">${l.length} areas${A.st?"":" · open areas first, then reserved, blitzing and cool down"} · Best fit weighs size, time since last worked (60+ days is best) and distance from your current blitz.</p>
    ${l.length?`<div class="st-list">${l.slice(0,A.n).map(t=>{const s=AST[t.lstatus]||[t.lstatus,"p-tag"],room=Math.max(1,Math.round((t.leads||0)/1500));
     return`<div class="st-row click" data-edit="territories" data-id="${t.id}"><div><b>${esc(t.city)} <span class="pill p-tag">${esc(t.isp)}</span> <span class="pill ${s[1]}">${s[0]}</span>${liveA(t)?' <span class="pill p-you">Your team</span>':""}</b><span>${(t.leads||0).toLocaleString()} leads · room for ~${room} rep${room>1?"s":""}${t._d!=null?" · "+t._d+" mi":""}</span><span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px">${areaTags(t)}</span></div>${canEdit?`<span class="btn btn-out btn-sm">${assigned(t)?"Edit":"Assign"}</span>`:""}</div>`}).join("")}</div>${l.length>A.n?`<button class="btn btn-out" type="button" data-armore="1" style="margin-top:12px;width:100%">Show ${Math.min(40,l.length-A.n)} more</button>`:""}`:`<div class="empty"><b>No areas match</b>Clear a filter to see more.</div>`}</div>`;
 }
