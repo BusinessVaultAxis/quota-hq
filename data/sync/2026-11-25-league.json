@@ -1,0 +1,11 @@
+[
+ {"col":"sales","id":"SUB-acb89c95","rename":"NC1100277220"},
+ {"col":"sales","id":"SUB-acb9d014","rename":"NC1100277200"},
+ {"col":"sales","id":"SUB-2d200e48","rename":"NC1100274134"},
+ {"col":"sales","id":"SUB-980b4d6e","rename":"NC1100273497"},
+ {"col":"sales","id":"NC1100273497","patch":{"status":"done","installDate":"2026-11-20"}},
+ {"col":"sales","id":"NC1100270780","patch":{"status":"done","installDate":"2026-11-19"}},
+ {"col":"sales","id":"NC1100268641","patch":{"status":"done","installDate":"2026-11-18"}},
+ {"col":"sales","id":"NC1100269976","patch":{"status":"cancelled","notes":"Cancelled in The League Nov 20"}},
+ {"col":"sales","id":"NC1100269941","patch":{"status":"cancelled","notes":"Cancelled in The League Nov 20"}}
+]

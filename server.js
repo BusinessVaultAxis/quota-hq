@@ -35,6 +35,7 @@ async function init() {
     const ops = JSON.parse(fs.readFileSync(path.join(syncDir, f), "utf8")); let n = 0;
     for (const o of ops) {
       if (o.set) { await pool.query(`insert into docs(col,id,data) values($1,$2,$3) on conflict(col,id) do nothing`, [o.col, o.id, JSON.stringify(o.set)]); n++ }
+      else if (o.rename) { const r = await pool.query(`update docs set id=$3,updated=now() where col=$1 and id=$2 and not exists(select 1 from docs where col=$1 and id=$3)`, [o.col, o.id, o.rename]); n += r.rowCount }
       else if (o.patch) { const r = await pool.query(`update docs set data=data||$3,updated=now() where col=$1 and id=$2`, [o.col, o.id, JSON.stringify(o.patch)]); n += r.rowCount }
     }
     await pool.query(`insert into applied_syncs(name) values($1)`, [f]); console.log(`Applied ${f}: ${n} changes`);
